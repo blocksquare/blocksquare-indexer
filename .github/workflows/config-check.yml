@@ -55,6 +55,7 @@ jobs:
             return hasConfigCommit;
 
       - name: Create check with status
+        id: create-check
         uses: actions/github-script@v7
         with:
           script: |
@@ -80,3 +81,34 @@ jobs:
                   : 'Comment `/generate-config` to generate the config file.'
               }
             });
+
+            return hasConfigCommit;
+          result-encoding: string
+
+      - name: Comment on PR if config needed
+        if: steps.create-check.outputs.result == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prDetails = ${{ steps.pr.outputs.result }};
+
+            // Check if we already commented
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prDetails.number
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('Config generation required')
+            );
+
+            if (!botComment) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prDetails.number,
+                body: '⚠️ **Config generation required**\n\nComment `/generate-config` to generate the config file.'
+              });
+            }
