@@ -1,27 +1,35 @@
 name: Generate Config Command
 
+# Triggered by slash-command-dispatcher via workflow_dispatch
+# This workflow can exist on develop/feature branches!
+
 on:
-  issue_comment:
-    types: [created]
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: 'PR number from slash command'
+        required: true
+      comment-id:
+        description: 'Comment ID that triggered the command'
+        required: false
+      repository:
+        description: 'Repository name'
+        required: false
 
 jobs:
   generate-config:
-    # Only run on PR comments containing /generate-config
-    if: |
-      github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/generate-config')
-
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
 
     steps:
-      - name: React to comment with eyes
+      - name: React to comment with rocket
+        if: inputs.comment-id != ''
         uses: peter-evans/create-or-update-comment@v4
         with:
-          comment-id: ${{ github.event.comment.id }}
-          reactions: eyes
+          comment-id: ${{ inputs.comment-id }}
+          reactions: rocket
 
       - name: Get PR details
         uses: actions/github-script@v7
@@ -31,18 +39,18 @@ jobs:
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: context.issue.number
+              pull_number: parseInt('${{ inputs.pull_request }}')
             });
             return {
               headRef: pr.data.head.ref,
-              baseRef: pr.data.base.ref
+              baseRef: pr.data.base.ref,
+              number: pr.data.number
             };
-          result-encoding: string
 
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ fromJSON(steps.pr.outputs.result).headRef }}
+          ref: ${{ steps.pr.outputs.result.headRef }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -61,7 +69,7 @@ jobs:
       - name: Determine ENVIO_NETWORK from target branch
         id: network
         run: |
-          BASE_REF='${{ fromJSON(steps.pr.outputs.result).baseRef }}'
+          BASE_REF='${{ steps.pr.outputs.result.baseRef }}'
           if [[ "$BASE_REF" == "release" ]]; then
             echo "ENVIO_NETWORK=mainnet" >> $GITHUB_ENV
             echo "network=mainnet" >> $GITHUB_OUTPUT
@@ -92,7 +100,7 @@ jobs:
         if: steps.commit.outputs.has_changes == 'true'
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ github.event.issue.number }}
+          issue-number: ${{ steps.pr.outputs.result.number }}
           body: |
             ✅ Config generated for **${{ steps.network.outputs.network }}**
 
@@ -100,6 +108,14 @@ jobs:
         if: steps.commit.outputs.has_changes == 'false'
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ github.event.issue.number }}
+          issue-number: ${{ steps.pr.outputs.result.number }}
           body: |
             ℹ️ Config already up-to-date
+
+      - name: Comment on failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ steps.pr.outputs.result.number }}
+          body: |
+            ❌ Config generation failed - check [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
