@@ -1,0 +1,105 @@
+name: Generate Config Command
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  generate-config:
+    # Only run on PR comments containing /generate-config
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/generate-config')
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: React to comment with eyes
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: eyes
+
+      - name: Get PR details
+        uses: actions/github-script@v7
+        id: pr
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return {
+              headRef: pr.data.head.ref,
+              baseRef: pr.data.base.ref
+            };
+          result-encoding: string
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ fromJSON(steps.pr.outputs.result).headRef }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.17.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Determine ENVIO_NETWORK from target branch
+        id: network
+        run: |
+          BASE_REF='${{ fromJSON(steps.pr.outputs.result).baseRef }}'
+          if [[ "$BASE_REF" == "release" ]]; then
+            echo "ENVIO_NETWORK=mainnet" >> $GITHUB_ENV
+            echo "network=mainnet" >> $GITHUB_OUTPUT
+          else
+            echo "ENVIO_NETWORK=testnet" >> $GITHUB_ENV
+            echo "network=testnet" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate config
+        run: pnpm run config
+
+      - name: Commit and push config
+        id: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add config.yaml
+
+          if git diff --cached --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            git commit -m "chore: generate config.yaml for ${{ steps.network.outputs.network }}"
+            git push
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment success with changes
+        if: steps.commit.outputs.has_changes == 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ✅ Config generated for **${{ steps.network.outputs.network }}**
+
+      - name: Comment already up to date
+        if: steps.commit.outputs.has_changes == 'false'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            ℹ️ Config already up-to-date
