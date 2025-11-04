@@ -48,7 +48,6 @@ jobs:
           # Reactions for feedback
           reaction-token: ${{ secrets.GITHUB_TOKEN }}
           reactions: true
-          named-args: true
 
       - name: Log Command Execution
         if: steps.slash-command-dispatch.outputs.command-name != ''
