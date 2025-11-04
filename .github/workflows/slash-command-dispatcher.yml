@@ -1,0 +1,71 @@
+name: Slash Command Dispatcher
+
+# This workflow MUST be on the default branch (release)
+# Worker workflows can be on any branch (develop, feature, etc.)
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  dispatch:
+    name: Dispatch Slash Commands
+    # Only run on PR comments (not issues)
+    if: github.event.issue.pull_request
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Get PR branch
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return pr.data.head.ref;
+          result-encoding: string
+
+      - name: Slash Command Dispatch
+        uses: peter-evans/slash-command-dispatch@v4
+        with:
+          token: ${{ secrets.PAT_WORKFLOW_DISPATCH }}
+
+          # Permission level required to run commands
+          # Options: none, read, triage, write, maintain, admin
+          permission: write
+
+          # List of commands to dispatch
+          commands: |
+            generate-config
+            run-tests
+            deploy
+            lint
+            format
+
+          # Use workflow_dispatch (not repository_dispatch)
+          dispatch-type: workflow
+
+          # Additional context passed to worker workflows
+          static-args: |
+            repository=${{ github.repository }}
+            comment-id=${{ github.event.comment.id }}
+            ref=${{ steps.pr.outputs.result }}
+
+          # Reactions for feedback
+          reaction-token: ${{ secrets.GITHUB_TOKEN }}
+          reactions: true
+
+      - name: Log Command Execution
+        if: steps.slash-command-dispatch.outputs.command-name != ''
+        run: |
+          echo "::notice::Dispatched command: ${{ steps.slash-command-dispatch.outputs.command-name }}"
+          echo "::notice::Triggered by: ${{ github.event.comment.user.login }}"
+          echo "::notice::PR number: ${{ github.event.issue.number }}"
