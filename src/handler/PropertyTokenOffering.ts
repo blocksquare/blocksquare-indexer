@@ -65,7 +65,7 @@ PropertyTokenOffering.Invested.handler(async ({ event, context }) => {
   );
 
   const propertyInvestment: PropertyTokenInvestment = {
-    id: `${event.chainId}-${event.params.property}-${event.params.wallet}`,
+    id: `${event.chainId}-${event.params.property}-${event.params.wallet}-${event.transaction.hash}-${event.logIndex}`,
     chainId: event.chainId,
     transactionHash: event.transaction.hash,
     propertyToken_id: `${event.chainId}-${event.params.property}`,
