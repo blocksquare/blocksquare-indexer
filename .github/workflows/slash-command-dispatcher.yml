@@ -20,6 +20,19 @@ jobs:
       issues: write
 
     steps:
+      - name: Get PR branch
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            return pr.data.head.ref;
+          result-encoding: string
+
       - name: Slash Command Dispatch
         uses: peter-evans/slash-command-dispatch@v4
         with:
@@ -44,6 +57,7 @@ jobs:
           static-args: |
             repository=${{ github.repository }}
             comment-id=${{ github.event.comment.id }}
+            ref=${{ steps.pr.outputs.result }}
 
           # Reactions for feedback
           reaction-token: ${{ secrets.GITHUB_TOKEN }}
