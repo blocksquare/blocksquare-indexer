@@ -1,20 +1,11 @@
 name: Generate Config Command
 
-# Triggered by slash-command-dispatcher via workflow_dispatch
-# This workflow can exist on develop/feature branches!
+# Triggered by slash-command-dispatcher via repository_dispatch
+# Must be on default branch (develop)
 
 on:
-  workflow_dispatch:
-    inputs:
-      pull_request:
-        description: 'PR number from slash command'
-        required: true
-      comment-id:
-        description: 'Comment ID that triggered the command'
-        required: false
-      repository:
-        description: 'Repository name'
-        required: false
+  repository_dispatch:
+    types: [generate-config-command]
 
 jobs:
   generate-config:
@@ -24,13 +15,6 @@ jobs:
       pull-requests: write
 
     steps:
-      - name: React to comment with rocket
-        if: inputs.comment-id != ''
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          comment-id: ${{ inputs.comment-id }}
-          reactions: rocket
-
       - name: Get PR details
         uses: actions/github-script@v7
         id: pr
@@ -39,7 +23,7 @@ jobs:
             const pr = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_number: parseInt('${{ inputs.pull_request }}')
+              pull_number: context.payload.client_payload.pull_request.number
             });
             return {
               headRef: pr.data.head.ref,
