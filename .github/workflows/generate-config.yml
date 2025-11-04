@@ -25,16 +25,14 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.payload.client_payload.pull_request.number
             });
-            return {
-              headRef: pr.data.head.ref,
-              baseRef: pr.data.base.ref,
-              number: pr.data.number
-            };
+            core.setOutput('headRef', pr.data.head.ref);
+            core.setOutput('baseRef', pr.data.base.ref);
+            core.setOutput('number', pr.data.number.toString());
 
       - name: Checkout PR branch
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.pr.outputs.result.headRef }}
+          ref: ${{ steps.pr.outputs.headRef }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -53,7 +51,7 @@ jobs:
       - name: Determine ENVIO_NETWORK from target branch
         id: network
         run: |
-          BASE_REF='${{ steps.pr.outputs.result.baseRef }}'
+          BASE_REF='${{ steps.pr.outputs.baseRef }}'
           if [[ "$BASE_REF" == "release" ]]; then
             echo "ENVIO_NETWORK=mainnet" >> $GITHUB_ENV
             echo "network=mainnet" >> $GITHUB_OUTPUT
@@ -76,7 +74,7 @@ jobs:
             echo "has_changes=false" >> $GITHUB_OUTPUT
           else
             git commit -m "chore: generate config.yaml for ${{ steps.network.outputs.network }}"
-            git push
+            git push origin HEAD:${{ steps.pr.outputs.headRef }}
             echo "has_changes=true" >> $GITHUB_OUTPUT
           fi
 
@@ -84,7 +82,7 @@ jobs:
         if: steps.commit.outputs.has_changes == 'true'
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ steps.pr.outputs.result.number }}
+          issue-number: ${{ steps.pr.outputs.number }}
           body: |
             ✅ Config generated for **${{ steps.network.outputs.network }}**
 
@@ -92,7 +90,7 @@ jobs:
         if: steps.commit.outputs.has_changes == 'false'
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ steps.pr.outputs.result.number }}
+          issue-number: ${{ steps.pr.outputs.number }}
           body: |
             ℹ️ Config already up-to-date
 
@@ -100,6 +98,6 @@ jobs:
         if: failure()
         uses: peter-evans/create-or-update-comment@v4
         with:
-          issue-number: ${{ steps.pr.outputs.result.number }}
+          issue-number: ${{ steps.pr.outputs.number }}
           body: |
             ❌ Config generation failed - check [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
