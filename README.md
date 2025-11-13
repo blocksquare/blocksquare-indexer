@@ -73,7 +73,7 @@ Query indexed data through the GraphQL endpoint:
 ## 🔧 Configuration
 
 ### Networks
-- **Mainnet** (default): Full ecosystem with price feeds
+- **Mainnet**: Full ecosystem with price feeds
 - **Sepolia Testnet**: Development and testing
 
 ### Environment Variables
