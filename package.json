@@ -13,23 +13,23 @@
     "config": "npx dotenvx run -- ts-node ./scripts/render-config-template.ts"
   },
   "devDependencies": {
-    "@dotenvx/dotenvx": "^1.51.0",
-    "@types/chai": "^5.2.2",
+    "@dotenvx/dotenvx": "^1.51.1",
+    "@types/chai": "^5.2.3",
     "@types/ejs": "^3.1.5",
     "@types/mocha": "10.0.10",
-    "@types/node": "24.5.2",
+    "@types/node": "24.10.1",
     "chai": "5.2.1",
     "ejs": "^3.1.10",
-    "envio": "2.31.1",
+    "envio": "2.32.2",
     "ethers": "6.15.0",
-    "mocha": "11.7.2",
+    "mocha": "11.7.5",
     "ts-mocha": "^11.1.0",
     "ts-node": "10.9.2",
-    "typescript": "5.9.2"
+    "typescript": "5.9.3"
   },
   "dependencies": {
-    "@rapideditor/country-coder": "^5.5.1",
-    "dayjs": "^1.11.18"
+    "@rapideditor/country-coder": "^5.6.0",
+    "dayjs": "^1.11.19"
   },
   "optionalDependencies": {
     "generated": "./generated"
