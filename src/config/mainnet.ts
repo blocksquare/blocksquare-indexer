@@ -54,6 +54,11 @@ export const mainnetConfig: Config = {
         '0x05F5b75d80291910a54b65AEa9B45F549CDd0AcC'
       ),
     },
+    // Landhive Pool
+    {
+      address: getAddress('0xFC7cd245913691Fb2d305a0fc60A1DadD1eCdeBF'),
+      valuationAddress: getAddress('0x3C18b35E8E919224eA4099acC0d280Eda76A71C0'),
+    }
   ],
   propertyTokenOfferingAddress: getAddress(
     '0x25862c4fb4ce9d6ff9b463488e0ec656fa08de78'
