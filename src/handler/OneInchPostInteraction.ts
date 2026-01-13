@@ -1,6 +1,5 @@
 import { OneInchPostInteraction } from 'generated';
 import {ORDER_STRUCT_INDEX, uint256ToAddress, updatePropertyTokenTradeCounts} from '../helper/LimitOrderTrades';
-import {LimitOrderProtocol} from "../types/enums";
 
 OneInchPostInteraction.PostInteractionOrderFilled.handler(async ({ event, context }) => {
   // Extract token addresses from the nested order struct (tuple array)
@@ -38,7 +37,7 @@ OneInchPostInteraction.PostInteractionOrderFilled.handler(async ({ event, contex
     takerTokenFilledAmount: event.params.takingAmount,
     makerTokenFilledAmount: event.params.makingAmount,
     propertyValuation: propertyToken.propertyValuation,
-    protocol: LimitOrderProtocol.OneInch,
+    protocol: '1inch',
   });
 
   // Handle case where property token is on maker side (being sold)

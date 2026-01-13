@@ -1,6 +1,5 @@
 import { ZeroEx } from 'generated';
 import { updatePropertyTokenTradeCounts } from '../helper/LimitOrderTrades';
-import {LimitOrderProtocol} from "../types/enums";
 
 ZeroEx.LimitOrderFilled.handler(async ({ event, context }) => {
   // Check if either makerToken or takerToken is a property token
