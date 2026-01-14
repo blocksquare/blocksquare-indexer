@@ -37,7 +37,7 @@ OneInchPostInteraction.PostInteractionOrderFilled.handler(async ({ event, contex
     takerTokenFilledAmount: event.params.takingAmount,
     makerTokenFilledAmount: event.params.makingAmount,
     propertyValuation: propertyToken.propertyValuation,
-    protocol: '1inch',
+    protocol: 'OneInch',
   });
 
   // Handle case where property token is on maker side (being sold)
