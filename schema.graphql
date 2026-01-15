@@ -530,3 +530,20 @@ type TokenRecord {
   marketcapBI: BigInt!
   token: Token!
 }
+
+type ReferralCode @entity {
+  id: ID! # keccak256(marketplace_id + wallet_address) - 32 bytes
+  wallet: Wallet!
+  marketplace: CertifiedPartner!
+  referrals: [Referral!]! @derivedFrom(field: "referrer")
+  createdAt: Int!
+}
+
+type Referral @entity {
+  id: ID! # chainId-cpAddress-buyerWallet
+  wallet: Wallet!
+  referrer: ReferralCode!
+  marketplace: CertifiedPartner!
+  firstOrderTrade: PropertyTokenTrade!
+  createdAt: Int!
+}
