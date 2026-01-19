@@ -269,6 +269,7 @@ type User {
   chainId: Int!
   wallets: [Wallet!]! @derivedFrom(field: "user")
   certifiedPartners: [UserCertifiedPartner!]! @derivedFrom(field: "user")
+  referrals: [Referral!]! @derivedFrom(field: "referrer")
 }
 
 type UserCertifiedPartner {
@@ -531,18 +532,10 @@ type TokenRecord {
   token: Token!
 }
 
-type ReferralCode @entity {
-  id: ID! # keccak256(marketplace_id + wallet_address) - 32 bytes
-  wallet: Wallet!
-  marketplace: CertifiedPartner!
-  referrals: [Referral!]! @derivedFrom(field: "referrer")
-  createdAt: Int!
-}
-
 type Referral @entity {
   id: ID! # chainId-cpAddress-buyerWallet
   wallet: Wallet!
-  referrer: ReferralCode!
+  referrer: User!
   marketplace: CertifiedPartner!
   firstOrderTrade: PropertyTokenTrade!
   createdAt: Int!
