@@ -216,6 +216,7 @@ type PropertyTokenTrade {
   makerTokenFilledAmount: BigInt!
   propertyValuation: BigInt!
   protocol: LimitOrderProtocol!
+  referralCode: String
 }
 
 type PropertyTokenTradeCounts {

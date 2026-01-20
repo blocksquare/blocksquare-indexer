@@ -13,7 +13,6 @@ ZeroEx.LimitOrderFilled.handler(async ({ event, context }) => {
   const propertyToken = makerPropertyToken || takerPropertyToken;
   if (!propertyToken) return;
 
-  // Create PropertyTokenTrade record
   context.PropertyTokenTrade.set({
     id: `${event.chainId}-${propertyToken.contractAddress}-${event.transaction.hash}-${event.logIndex}`,
     chainID: event.chainId,
@@ -30,6 +29,7 @@ ZeroEx.LimitOrderFilled.handler(async ({ event, context }) => {
     makerTokenFilledAmount: event.params.makerTokenFilledAmount,
     propertyValuation: propertyToken.propertyValuation,
     protocol: LimitOrderProtocol.ZeroEx,
+    referralCode: '',
   });
 
   // Handle case where property token is on maker side (being sold)
