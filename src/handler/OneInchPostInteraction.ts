@@ -28,8 +28,7 @@ OneInchPostInteraction.PostInteractionOrderFilled.handler(async ({ event, contex
   const marketplaceId = propertyToken.certifiedPartner_id;
 
   const extraData = event.params.extraData;
-  const EMPTY_BYTES32 = '0x' + '0'.repeat(64);
-  const hasValidExtraData = extraData && extraData.length === 66 && extraData !== EMPTY_BYTES32;
+  const hasValidExtraData = extraData && extraData.length === 66;
 
   let validReferralCode = '';
 
