@@ -645,9 +645,11 @@ type StakingPoolV4PositionRecord {
 type UserCumulativeReward {
   id: ID! # ${stakingPoolId}-${walletAddress}
   cumulativeReward: BigInt!
+  lastDistributedCumulativeReward: BigInt!
   updatedAtTimestamp: Int! @index
   blockNumber: Int!
   merkleRoot: String! @index
+  lastDistributedMerkleRoot: String! @index
   isRewardsDistributed: Boolean!
   distributionSkipped: Boolean!
   wallet: Wallet!

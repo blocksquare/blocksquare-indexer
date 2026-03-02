@@ -385,8 +385,10 @@ onBlock(
       context.UserCumulativeReward.set({
         id: candidate.stakedPosition.id,
         cumulativeReward: candidate.cumulativeReward,
+        lastDistributedCumulativeReward: 0n,
         updatedAtTimestamp: 0,
         merkleRoot,
+        lastDistributedMerkleRoot: "",
         isRewardsDistributed: false,
         distributionSkipped: false,
         blockNumber: block.number,
@@ -445,6 +447,9 @@ UniswapV4Staking.Reward.handler(async ({ event, context }) => {
   // Fetch all pending cumulative reward records.
   // A pending record has updatedAtTimestamp = 0, meaning it was created
   // by a daily rewards calculation but not yet marked as distributed.
+  // - `lastDistributedCumulativeReward` / `lastDistributedMerkleRoot` store the values from the most recent
+  // successful distribution for this user. This provides a fallback for the frontend if the latest
+  // cumulative reward (from a daily calculation) has not yet been distributed on-chain.
   const pendingRewards =
     await context.UserCumulativeReward.getWhere.updatedAtTimestamp.eq(0);
   if (pendingRewards.length === 0) return;
@@ -454,6 +459,12 @@ UniswapV4Staking.Reward.handler(async ({ event, context }) => {
     const isMatch = pending.merkleRoot === merkleRoot;
     context.UserCumulativeReward.set({
       ...pending,
+      lastDistributedCumulativeReward: pending.isRewardsDistributed
+        ? pending.cumulativeReward
+        : pending.lastDistributedCumulativeReward,
+      lastDistributedMerkleRoot: pending.isRewardsDistributed
+        ? pending.merkleRoot
+        : pending.lastDistributedMerkleRoot,
       isRewardsDistributed: isMatch,
       updatedAtTimestamp: timestamp,
       distributionSkipped: !isMatch,
