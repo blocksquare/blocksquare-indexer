@@ -84,5 +84,8 @@ export const mainnetConfig: Config = {
   ),
   zeroExAddress: getAddress('0xdef1c0ded9bec7f1a1670819833240f027b25eff'),
   zeroExStartBlock: 17337444,
-  oneInchPostInteractionAddress: getAddress('0xC8B2029bF486c62d2086D767bA1C23b9485da29E')
+  oneInchPostInteractionAddress: getAddress('0xC8B2029bF486c62d2086D767bA1C23b9485da29E'),
+  uniswapV4PoolManagerAddress: '',
+  uniswapV4PositionManagerAddress: '',
+  uniswapV4StakingAddress: '',
 };

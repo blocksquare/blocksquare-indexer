@@ -29,7 +29,8 @@
   },
   "dependencies": {
     "@rapideditor/country-coder": "^5.6.0",
-    "dayjs": "^1.11.19"
+    "dayjs": "^1.11.19",
+    "merkletreejs": "^0.6.0"
   },
   "optionalDependencies": {
     "generated": "./generated"

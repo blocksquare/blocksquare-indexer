@@ -30,6 +30,9 @@ export type Config = {
   zeroExAddress: string;
   zeroExStartBlock: number;
   oneInchPostInteractionAddress: string;
+  uniswapV4PoolManagerAddress: string,
+  uniswapV4PositionManagerAddress: string,
+  uniswapV4StakingAddress: string,
 };
 
 export type PropertyTokenRevenueDistributionInterval = {
