@@ -10,6 +10,7 @@ import { getLoadedConfig } from "../config";
 import { ethers } from "ethers";
 import { buildMerkleTree, getPredictedDailyBlockCount, getUniswapV4StakingDeployementBlock, TOTAL_DAILY_REWARDS } from "../helper/UniswapV4Helpers/utils";
 import { calculateActiveLiquidity } from "../helper/UniswapV4Helpers/liquidityAmounts";
+import { StakingPoolV4PositionRecordType } from "../types/enums";
 
 const { uniswapV4StakingAddress, chainId: loadedChainId } = getLoadedConfig();
 
@@ -161,7 +162,7 @@ UniswapV4Staking.Deposit.handler(async ({ event, context }) => {
       pool_id: stakingPoolEntityId,
       rewardsClaimed: 0n,
       rewardsBurned: 0n,
-      transactionType: "DEPOSIT",
+      transactionType: StakingPoolV4PositionRecordType.DEPOSIT,
     });
   }
 });
@@ -213,7 +214,7 @@ UniswapV4Staking.Withdraw.handler(async ({ event, context }) => {
       tokenId,
       rewardsClaimed: 0n,
       rewardsBurned: 0n,
-      transactionType: "WITHDRAW",
+      transactionType: StakingPoolV4PositionRecordType.WITHDRAW,
       pool_id: stakingContractId,
     });
   }
@@ -269,7 +270,7 @@ UniswapV4Staking.EarlyWithdraw.handler(async ({ event, context }) => {
       tokenId,
       rewardsClaimed: 0n,
       rewardsBurned: 0n,
-      transactionType: "EARLY_WITHDRAW",
+      transactionType: StakingPoolV4PositionRecordType.EARLY_WITHDRAW,
       pool_id: stakingContractId,
     });
   }
@@ -565,7 +566,7 @@ UniswapV4Staking.RewardsClaimed.handler(async ({ event, context }) => {
     rewardsBurned: 0n,
     transactionHash: hash,
     tokenId: uniswapV4PositionToken.tokenId,
-    transactionType: "REWARDS_CLAIMED",
+    transactionType: StakingPoolV4PositionRecordType.REWARDS_CLAIMED,
   });
 
   if (cumilativeRewardsData) {
@@ -628,7 +629,7 @@ UniswapV4Staking.RewardsBurned.handler(async ({ event, context }) => {
     rewardsBurned: amount,
     transactionHash: hash,
     tokenId: uniswapV4PositionToken.tokenId,
-    transactionType: "REWARDS_BURNED",
+    transactionType: StakingPoolV4PositionRecordType.REWARDS_BURNED,
   });
 
   if (cumilativeRewardsData) {
