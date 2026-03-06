@@ -11,22 +11,6 @@ export const TOTAL_DAILY_REWARDS = TOTAL_MONTHLY_REWARDS / 30n;
 const SEPOLIA_CHAIN_ID = 11155111;
 
 /**
- * Determines whether a Uniswap V4 position is currently in-range (active)
- * and returns its active liquidity.
- *
- * @param uniPosition - The Uniswap V4 position object containing tick bounds and liquidityDelta.
- * @param currentTick - The current tick of the pool.
- * @returns The active liquidity (liquidityDelta if in-range, otherwise 0n).
- */
-export function calculateActiveLiquidity(
-  uniPosition: { tickLower: number; tickUpper: number; liquidityDelta: bigint },
-  currentTick: number
-): bigint {
-  const inRange = currentTick >= uniPosition.tickLower && currentTick < uniPosition.tickUpper;
-  return inRange ? uniPosition.liquidityDelta : 0n;
-}
-
-/**
  * Builds a Merkle tree from an array of reward data (tokenId + cumulativeReward).
  * Each leaf is the keccak256 hash of (tokenId, cumulativeReward).
  *

@@ -34,6 +34,7 @@ UniswapV4PositionManager.Transfer.handler(async ({ event, context }) => {
 
       owner: wallet.address,
       isBurned: isBurnEvent,
+      wallet_id: wallet.id
     };
 
     context.UniswapV4PositionToken.set(updatedToken);
@@ -60,6 +61,7 @@ UniswapV4PositionManager.Transfer.handler(async ({ event, context }) => {
       isBurned: isBurnEvent,
       mintedTransactionHash: transactionHash,
       position_id: uniswapPositionId,
+      wallet_id: wallet.id
     };
 
     context.UniswapV4PositionToken.set(newToken);

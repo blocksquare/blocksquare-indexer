@@ -1,6 +1,7 @@
 import { ZeroAddress } from "ethers";
 import { UniswapV4PoolManager } from "generated";
 import { getLoadedConfig } from "../config";
+import { getAmount0, getAmount1 } from "../helper/UniswapV4Helpers/liquidityAmounts";
 
 const bstTokenAddress = getLoadedConfig().blockSquareTokenAddress;
 
@@ -39,11 +40,11 @@ UniswapV4PoolManager.Initialize.handler(async ({ event, context }) => {
     poolId,
     currency0,
     currency1,
-    fee: Number(fee),
-    tickSpacing: Number(tickSpacing),
+    fee,
+    tickSpacing,
     hooks,
     sqrtPriceX96,
-    tick: Number(tick),
+    tick,
     createdAtTimestamp: event.block.timestamp,
     creationTransaction: event.transaction.hash,
   });
@@ -58,10 +59,27 @@ UniswapV4PoolManager.Swap.handler(async ({ event, context }) => {
   if (existingPool) {
     context.UniswapV4Pool.set({
       ...existingPool,
-      tick: Number(tick),
+      tick,
       sqrtPriceX96,
     });
+
+
+    const allPoolPositions = await context.UniswapV4PoolPosition.getWhere.pool_id.eq(existingPool.id);
+
+    if(allPoolPositions.length){
+      for (const position of allPoolPositions) {
+        const updatedAmount0 = getAmount0(position.tickLower, position.tickUpper, tick, position.liquidityDelta, sqrtPriceX96);
+        const updatedAmount1 = getAmount1(position.tickLower, position.tickUpper, tick, position.liquidityDelta, sqrtPriceX96);
+
+        context.UniswapV4PoolPosition.set({
+          ...position,
+          amount0: updatedAmount0,
+          amount1: updatedAmount1,
+        })
+      }
+    }
   }
+
 });
 
 UniswapV4PoolManager.ModifyLiquidity.handler(async ({ event, context }) => {
@@ -79,6 +97,7 @@ UniswapV4PoolManager.ModifyLiquidity.handler(async ({ event, context }) => {
   const {
     chainId,
     transaction: { hash: transactionHash },
+    block: { number: blockNumber },
   } = event;
   const {
     id: poolId,
@@ -113,23 +132,48 @@ UniswapV4PoolManager.ModifyLiquidity.handler(async ({ event, context }) => {
     position = positionByUniqueKey[0];
   }
 
+  const amount0 = getAmount0(tickLower, tickUpper, pool.tick, liquidityDelta, pool.sqrtPriceX96);
+  const amount1 = getAmount1(tickLower, tickUpper, pool.tick, liquidityDelta, pool.sqrtPriceX96);
+
   if (position) {
+    const updatedLiquidityDelta = position.liquidityDelta + liquidityDelta;
+    const updatedAmount0 = getAmount0(position.tickLower, position.tickUpper, pool.tick, updatedLiquidityDelta, pool.sqrtPriceX96);
+    const updatedAmount1 = getAmount1(position.tickLower, position.tickUpper, pool.tick, updatedLiquidityDelta, pool.sqrtPriceX96);
+
     context.UniswapV4PoolPosition.set({
       ...position,
-      liquidityDelta: position.liquidityDelta + liquidityDelta,
+      liquidityDelta: updatedLiquidityDelta,
+      amount0: updatedAmount0,
+      amount1: updatedAmount1
     });
   } else {
     context.UniswapV4PoolPosition.set({
       id: positionId,
       transactionHash,
       liquidityDelta,
-      tickLower: Number(tickLower),
-      tickUpper: Number(tickUpper),
+      tickLower,
+      tickUpper,
       salt,
-      poolId,
       chainId,
       pool_id: poolEntityId,
       uniqueKey: positionUniqueKey,
+      amount0,
+      amount1
     });
   }
+
+  context.UniswapV4PoolPositionRecord.set({
+    id: `${positionUniqueKey}-${blockNumber}`,
+    blockNumber,
+    transactionHash,
+    liquidityDelta,
+    tickLower,
+    tickUpper,
+    salt,
+    chainId,
+    pool_id: poolEntityId,
+    uniqueKey: positionUniqueKey,
+    amount0,
+    amount1
+  });
 });

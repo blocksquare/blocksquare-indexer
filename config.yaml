@@ -6,6 +6,7 @@ field_selection:
   transaction_fields:
     - "hash"
     - "transactionIndex"
+    - "from"
 contracts:
   - name: UniswapV4PoolManager
     abi_file_path: abis/UniswapV4PoolManager.json

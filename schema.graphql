@@ -287,6 +287,8 @@ type Wallet {
   properties: [PropertyTokenHolder!]! @derivedFrom(field: "wallet")
   stakingPositions: [StakingPoolPosition!]! @derivedFrom(field: "wallet")
   stakingV4Positions: [StakingPoolV4Position!]! @derivedFrom(field: "wallet")
+  uniswapV4Tokens: [UniswapV4PositionToken!]! @derivedFrom(field: "wallet")
+  cumulativeRewards: [UserCumulativeReward!]! @derivedFrom(field: "wallet")
   propertyStakingPositions: [PropertyStakingPoolPosition!]!
     @derivedFrom(field: "wallet")
   takerTrades: [PropertyTokenTrade!]! @derivedFrom(field: "taker")
@@ -538,11 +540,11 @@ type UniswapV4Pool {
   poolId: String! @index
   currency0: String!
   currency1: String!
-  fee: Int!
-  tickSpacing: Int!
+  fee: BigInt!
+  tickSpacing: BigInt!
   hooks: String!
   sqrtPriceX96: BigInt!
-  tick: Int!
+  tick: BigInt!
   createdAtTimestamp: Int!
   creationTransaction: String!
 }
@@ -551,14 +553,30 @@ type UniswapV4PoolPosition {
   id: ID! # ${chainId}-${poolId}-${tickLower}-${tickUpper}-${salt}
   uniqueKey: String! @index
   chainId: Int!
-  poolId: Bytes! @index
-  tickLower: Int!
-  tickUpper: Int!
+  tickLower: BigInt!
+  tickUpper: BigInt!
   liquidityDelta: BigInt!
   salt: String!
+  amount0: BigInt!
+  amount1: BigInt!
   transactionHash: String!
-  pool: UniswapV4Pool
+  pool: UniswapV4Pool! @index
   token: [UniswapV4PositionToken!]! @derivedFrom(field: "position")
+}
+
+type UniswapV4PoolPositionRecord {
+  id: ID! # ${chainId}-${poolId}-${tickLower}-${tickUpper}-${salt}
+  blockNumber: Int!
+  uniqueKey: String! @index
+  chainId: Int!
+  tickLower: BigInt!
+  tickUpper: BigInt!
+  liquidityDelta: BigInt!
+  amount0: BigInt!
+  amount1: BigInt!
+  salt: String!
+  transactionHash: String!
+  pool: UniswapV4Pool! @index
 }
 
 type UniswapV4PositionToken {
@@ -567,6 +585,7 @@ type UniswapV4PositionToken {
   owner: String!
   isBurned: Boolean!
   mintedTransactionHash: String!
+  wallet: Wallet!
   position: UniswapV4PoolPosition!
   stakingPosition: [StakingPoolV4Position!]! @derivedFrom(field: "positionToken")
 }
@@ -601,6 +620,7 @@ type StakingPoolV4Position {
   tokenId: BigInt! @index
   liquidity: BigInt!
   isPositionClosed: Boolean!
+  updatedAtTimestamp: Int!
   wallet: Wallet!
   pool: StakingPoolV4!
   positionToken: UniswapV4PositionToken
@@ -612,6 +632,7 @@ type StakingPoolV4Record {
   chainId: Int!
   transactionHash: String!
   totalRewards: BigInt!
+  merkleRoot: String!
   pool: StakingPoolV4!
   "Timestamp of the hour start (mightnight UTC) in seconds"
   hourStartTimestamp: Int! @index
@@ -645,10 +666,14 @@ type StakingPoolV4PositionRecord {
 type UserCumulativeReward {
   id: ID! # ${stakingPoolId}-${walletAddress}
   cumulativeReward: BigInt!
+  claimed: BigInt!
+  burned: BigInt!
   lastDistributedCumulativeReward: BigInt!
   updatedAtTimestamp: Int! @index
   blockNumber: Int!
   merkleRoot: String! @index
+  proof: [String!]!
+  lastDistributedProof: [String!]!
   lastDistributedMerkleRoot: String! @index
   isRewardsDistributed: Boolean!
   distributionSkipped: Boolean!

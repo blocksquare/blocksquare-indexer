@@ -1,14 +1,15 @@
 import { getNewWallet } from "../helper/Wallet";
-import { chain, onBlock, UniswapV4Staking } from "generated";
+import {
+  chain,
+  onBlock,
+  UniswapV4Staking,
+  UserCumulativeReward,
+} from "generated";
 import { getDay, getHour } from "../helper/date";
 import { getLoadedConfig } from "../config";
-import {
-  buildMerkleTree,
-  calculateActiveLiquidity,
-  getPredictedDailyBlockCount,
-  getUniswapV4StakingDeployementBlock,
-  TOTAL_DAILY_REWARDS,
-} from "../helper/UniswapV4Staking";
+import { ethers } from "ethers";
+import { buildMerkleTree, getPredictedDailyBlockCount, getUniswapV4StakingDeployementBlock, TOTAL_DAILY_REWARDS } from "../helper/UniswapV4Helpers/utils";
+import { calculateActiveLiquidity } from "../helper/UniswapV4Helpers/liquidityAmounts";
 
 const { uniswapV4StakingAddress, chainId: loadedChainId } = getLoadedConfig();
 
@@ -92,6 +93,7 @@ UniswapV4Staking.Deposit.handler(async ({ event, context }) => {
     chainId,
     srcAddress: stakingContractAddress,
     transaction: { hash: transactionHash },
+    block: { timestamp },
     logIndex,
   } = event;
   const { owner, tokenId, liquidity, lockedUntil, timeBoost } = event.params;
@@ -128,6 +130,7 @@ UniswapV4Staking.Deposit.handler(async ({ event, context }) => {
         liquidity,
         timeBoost,
         isPositionClosed: false,
+        updatedAtTimestamp: timestamp,
       });
     } else {
       context.StakingPoolV4Position.set({
@@ -138,6 +141,7 @@ UniswapV4Staking.Deposit.handler(async ({ event, context }) => {
         liquidity,
         timeBoost,
         isPositionClosed: false,
+        updatedAtTimestamp: timestamp,
         wallet_id: wallet.id,
         pool_id: stakingPoolEntityId,
         positionToken_id: existingUniToken.id,
@@ -175,6 +179,7 @@ UniswapV4Staking.Withdraw.handler(async ({ event, context }) => {
     chainId,
     transaction: { hash: transactionHash },
     srcAddress: stakingContractAddress,
+    block: { timestamp },
     logIndex,
   } = event;
   const { owner, tokenId } = event.params;
@@ -191,6 +196,7 @@ UniswapV4Staking.Withdraw.handler(async ({ event, context }) => {
     context.StakingPoolV4Position.set({
       ...stakingPosition,
       isPositionClosed: true,
+      updatedAtTimestamp: timestamp,
     });
 
     const { id: hourId, start: hourStart } = getHour(event.block.timestamp);
@@ -228,6 +234,7 @@ UniswapV4Staking.EarlyWithdraw.handler(async ({ event, context }) => {
     chainId,
     transaction: { hash: transactionHash },
     srcAddress: stakingContractAddress,
+    block: { timestamp },
     logIndex,
   } = event;
   const { owner, tokenId } = event.params;
@@ -245,6 +252,7 @@ UniswapV4Staking.EarlyWithdraw.handler(async ({ event, context }) => {
     context.StakingPoolV4Position.set({
       ...stakingPosition,
       isPositionClosed: true,
+      updatedAtTimestamp: timestamp,
     });
 
     const { id: hourId, start: hourStart } = getHour(event.block.timestamp);
@@ -305,14 +313,13 @@ onBlock(
       await context.StakingPoolV4Position.getWhere.pool_id.eq(
         STAKING_POOL_ENTITY_ID,
       );
-    const activeStakedPositions = allStakedPositions.filter(
-      (p) => !p.isPositionClosed,
-    );
+    const activeStakedPositions = allStakedPositions
+      .filter((p) => !p.isPositionClosed)
+      .sort((a, b) => a.updatedAtTimestamp - b.updatedAtTimestamp);
     if (activeStakedPositions.length === 0) return;
 
-    const uniPositions = await context.UniswapV4PoolPosition.getWhere.poolId.eq(
-      uniV4Pool.poolId,
-    );
+    const uniPositions =
+      await context.UniswapV4PoolPosition.getWhere.pool_id.eq(uniV4Pool.id);
 
     // Compute total active liquidity and build list of eligible positions.
     // Only positions that are in-range (active liquidity > 0) qualify for rewards.
@@ -322,6 +329,7 @@ onBlock(
       uniPosition: (typeof uniPositions)[0];
       activeLiquidity: bigint;
       cumulativeReward: bigint;
+      existingRewardData?: UserCumulativeReward;
     }> = [];
 
     for (const stakedPosition of activeStakedPositions) {
@@ -367,6 +375,7 @@ onBlock(
       const cumulativeReward =
         (existingRewardData?.cumulativeReward ?? 0n) + rewardAmount;
 
+      candidate.existingRewardData = existingRewardData;
       candidate.cumulativeReward = cumulativeReward;
 
       // Each leaf in the Merkle tree is the hash of (tokenId, cumulativeReward).
@@ -379,23 +388,50 @@ onBlock(
     // Build Merkle tree from leaves and obtain the root.
     // The root will be stored with each cumulative reward record and later
     // used in the on-chain reward distribution event.
-    const { root: merkleRoot } = buildMerkleTree(merkleLeaves);
+    const { root: merkleRoot, tree } = buildMerkleTree(merkleLeaves);
 
     for (const candidate of rewardCandidates) {
-      context.UserCumulativeReward.set({
-        id: candidate.stakedPosition.id,
-        cumulativeReward: candidate.cumulativeReward,
-        lastDistributedCumulativeReward: 0n,
-        updatedAtTimestamp: 0,
-        merkleRoot,
-        lastDistributedMerkleRoot: "",
-        isRewardsDistributed: false,
-        distributionSkipped: false,
-        blockNumber: block.number,
-        wallet_id: candidate.stakedPosition.wallet_id,
-        stakingPool_id: STAKING_POOL_ENTITY_ID,
-        uniPosition_id: candidate.uniPosition.id,
-      });
+      const leaf = ethers.keccak256(
+        ethers.AbiCoder.defaultAbiCoder().encode(
+          ["uint256", "uint256"],
+          [candidate.stakedPosition.tokenId, candidate.cumulativeReward],
+        ),
+      );
+      const proof = tree.getHexProof(leaf);
+
+      if (candidate.existingRewardData) {
+        context.UserCumulativeReward.set({
+          ...candidate.existingRewardData,
+          cumulativeReward: candidate.cumulativeReward,
+          updatedAtTimestamp: 0,
+          merkleRoot,
+          isRewardsDistributed: false,
+          distributionSkipped: false,
+          blockNumber: block.number,
+          stakingPool_id: STAKING_POOL_ENTITY_ID,
+          uniPosition_id: candidate.uniPosition.id,
+          proof,
+        });
+      } else {
+        context.UserCumulativeReward.set({
+          id: candidate.stakedPosition.id,
+          cumulativeReward: candidate.cumulativeReward,
+          lastDistributedCumulativeReward: 0n,
+          updatedAtTimestamp: 0,
+          merkleRoot,
+          lastDistributedMerkleRoot: "",
+          isRewardsDistributed: false,
+          distributionSkipped: false,
+          blockNumber: block.number,
+          wallet_id: candidate.stakedPosition.wallet_id,
+          stakingPool_id: STAKING_POOL_ENTITY_ID,
+          uniPosition_id: candidate.uniPosition.id,
+          proof,
+          lastDistributedProof: [],
+          claimed: 0n,
+          burned: 0n,
+        });
+      }
     }
   },
 );
@@ -442,6 +478,7 @@ UniswapV4Staking.Reward.handler(async ({ event, context }) => {
     pool_id: stakingPool.id,
     totalRewards: updatedTotalRewards,
     transactionHash: hash,
+    merkleRoot,
   });
 
   // Fetch all pending cumulative reward records.
@@ -457,14 +494,18 @@ UniswapV4Staking.Reward.handler(async ({ event, context }) => {
   // Update each pending reward: mark as distributed if merkleRoot matches, otherwise skipped
   for (const pending of pendingRewards) {
     const isMatch = pending.merkleRoot === merkleRoot;
+
     context.UserCumulativeReward.set({
       ...pending,
-      lastDistributedCumulativeReward: pending.isRewardsDistributed
+      lastDistributedCumulativeReward: isMatch
         ? pending.cumulativeReward
         : pending.lastDistributedCumulativeReward,
-      lastDistributedMerkleRoot: pending.isRewardsDistributed
+      lastDistributedMerkleRoot: isMatch
         ? pending.merkleRoot
         : pending.lastDistributedMerkleRoot,
+      lastDistributedProof: isMatch
+        ? pending.proof
+        : pending.lastDistributedProof,
       isRewardsDistributed: isMatch,
       updatedAtTimestamp: timestamp,
       distributionSkipped: !isMatch,
@@ -488,7 +529,7 @@ UniswapV4Staking.RewardsClaimed.handler(async ({ event, context }) => {
     block: { timestamp },
     params: { tokenId, amount },
     srcAddress: stakingContractAddress,
-    transaction: { hash },
+    transaction: { hash, from },
     logIndex,
   } = event;
 
@@ -504,6 +545,10 @@ UniswapV4Staking.RewardsClaimed.handler(async ({ event, context }) => {
 
   const stakingPool = await context.StakingPoolV4.get(stakingEntityId);
   if (!stakingPool) return;
+
+  const cumilativeRewardsData = await context.UserCumulativeReward.get(
+    `${chainId}-${from}-${tokenId}`,
+  );
 
   context.StakingPoolV4.set({
     ...stakingPool,
@@ -522,6 +567,13 @@ UniswapV4Staking.RewardsClaimed.handler(async ({ event, context }) => {
     tokenId: uniswapV4PositionToken.tokenId,
     transactionType: "REWARDS_CLAIMED",
   });
+
+  if (cumilativeRewardsData) {
+    context.UserCumulativeReward.set({
+      ...cumilativeRewardsData,
+      claimed: cumilativeRewardsData.claimed + amount,
+    });
+  }
 });
 
 UniswapV4Staking.RewardsBurned.handler(async ({ event, context }) => {
@@ -540,7 +592,7 @@ UniswapV4Staking.RewardsBurned.handler(async ({ event, context }) => {
     block: { timestamp },
     params: { tokenId, amount },
     srcAddress: stakingContractAddress,
-    transaction: { hash },
+    transaction: { hash, from },
     logIndex,
   } = event;
 
@@ -556,6 +608,10 @@ UniswapV4Staking.RewardsBurned.handler(async ({ event, context }) => {
 
   const stakingPool = await context.StakingPoolV4.get(stakingEntityId);
   if (!stakingPool) return;
+
+  const cumilativeRewardsData = await context.UserCumulativeReward.get(
+    `${chainId}-${from}-${tokenId}`,
+  );
 
   context.StakingPoolV4.set({
     ...stakingPool,
@@ -574,4 +630,11 @@ UniswapV4Staking.RewardsBurned.handler(async ({ event, context }) => {
     tokenId: uniswapV4PositionToken.tokenId,
     transactionType: "REWARDS_BURNED",
   });
+
+  if (cumilativeRewardsData) {
+    context.UserCumulativeReward.set({
+      ...cumilativeRewardsData,
+      burned: cumilativeRewardsData.burned + amount,
+    });
+  }
 });
