@@ -609,7 +609,8 @@ type StakingPoolV4 {
   totalRewardsBurned: BigInt!
   uniswapV4Pool: UniswapV4Pool!
   positions: [StakingPoolV4Position!]! @derivedFrom(field: "pool")
-  historyRecords: [StakingPoolV4PositionRecord!]! @derivedFrom(field: "pool")
+  positionRecords: [StakingPoolV4PositionRecord!]! @derivedFrom(field: "pool")
+  historyRecords: [StakingPoolV4Record!]! @derivedFrom(field: "pool")
 }
 
 type StakingPoolV4Position {
