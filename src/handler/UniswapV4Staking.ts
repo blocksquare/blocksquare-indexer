@@ -7,8 +7,13 @@ import {
 } from "generated";
 import { getDay, getHour } from "../helper/date";
 import { getLoadedConfig } from "../config";
-import { ethers } from "ethers";
-import { buildMerkleTree, getPredictedDailyBlockCount, getUniswapV4StakingDeployementBlock, TOTAL_DAILY_REWARDS } from "../helper/UniswapV4Helpers/utils";
+import { ethers, id } from "ethers";
+import {
+  buildMerkleTree,
+  getPredictedDailyBlockCount,
+  getUniswapV4StakingDeployementBlock,
+  TOTAL_DAILY_REWARDS,
+} from "../helper/UniswapV4Helpers/utils";
 import { calculateActiveLiquidity } from "../helper/UniswapV4Helpers/liquidityAmounts";
 import { StakingPoolV4PositionRecordType } from "../types/enums";
 
@@ -547,8 +552,11 @@ UniswapV4Staking.RewardsClaimed.handler(async ({ event, context }) => {
   const stakingPool = await context.StakingPoolV4.get(stakingEntityId);
   if (!stakingPool) return;
 
+
+  const walletEntityId = `${chainId}-${from}`;
+  const cumilativeRewardsDataEntityId = `${walletEntityId}-${tokenId}`;
   const cumilativeRewardsData = await context.UserCumulativeReward.get(
-    `${chainId}-${from}-${tokenId}`,
+    cumilativeRewardsDataEntityId,
   );
 
   context.StakingPoolV4.set({
@@ -573,6 +581,25 @@ UniswapV4Staking.RewardsClaimed.handler(async ({ event, context }) => {
     context.UserCumulativeReward.set({
       ...cumilativeRewardsData,
       claimed: cumilativeRewardsData.claimed + amount,
+    });
+  } else {
+    context.UserCumulativeReward.set({
+      id: cumilativeRewardsDataEntityId,
+      cumulativeReward: 0n,
+      lastDistributedCumulativeReward: 0n,
+      updatedAtTimestamp: 0,
+      merkleRoot: "",
+      lastDistributedMerkleRoot: "",
+      isRewardsDistributed: false,
+      distributionSkipped: false,
+      blockNumber: 0,
+      wallet_id: walletEntityId,
+      stakingPool_id: stakingPool.id,
+      uniPosition_id: uniswapV4PositionToken.position_id,
+      proof: [""],
+      lastDistributedProof: [],
+      claimed: amount,
+      burned: 0n,
     });
   }
 });
@@ -610,8 +637,10 @@ UniswapV4Staking.RewardsBurned.handler(async ({ event, context }) => {
   const stakingPool = await context.StakingPoolV4.get(stakingEntityId);
   if (!stakingPool) return;
 
+  const walletEntityId = `${chainId}-${from}`;
+  const cumilativeRewardsDataEntityId = `${walletEntityId}-${tokenId}`;
   const cumilativeRewardsData = await context.UserCumulativeReward.get(
-    `${chainId}-${from}-${tokenId}`,
+    cumilativeRewardsDataEntityId,
   );
 
   context.StakingPoolV4.set({
@@ -636,6 +665,25 @@ UniswapV4Staking.RewardsBurned.handler(async ({ event, context }) => {
     context.UserCumulativeReward.set({
       ...cumilativeRewardsData,
       burned: cumilativeRewardsData.burned + amount,
+    });
+  } else {
+    context.UserCumulativeReward.set({
+      id: cumilativeRewardsDataEntityId,
+      cumulativeReward: 0n,
+      lastDistributedCumulativeReward: 0n,
+      updatedAtTimestamp: 0,
+      merkleRoot: "",
+      lastDistributedMerkleRoot: "",
+      isRewardsDistributed: false,
+      distributionSkipped: false,
+      blockNumber: 0,
+      wallet_id: walletEntityId,
+      stakingPool_id: stakingPool.id,
+      uniPosition_id: uniswapV4PositionToken.position_id,
+      proof: [""],
+      lastDistributedProof: [],
+      claimed: 0n,
+      burned: amount,
     });
   }
 });

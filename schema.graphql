@@ -675,7 +675,7 @@ type UserCumulativeReward {
   merkleRoot: String! @index
   proof: [String!]!
   lastDistributedProof: [String!]!
-  lastDistributedMerkleRoot: String! @index
+  lastDistributedMerkleRoot: String!
   isRewardsDistributed: Boolean!
   distributionSkipped: Boolean!
   wallet: Wallet!
