@@ -611,6 +611,7 @@ type StakingPoolV4 {
   positions: [StakingPoolV4Position!]! @derivedFrom(field: "pool")
   positionRecords: [StakingPoolV4PositionRecord!]! @derivedFrom(field: "pool")
   historyRecords: [StakingPoolV4Record!]! @derivedFrom(field: "pool")
+  cumilativeRewards: [UserCumulativeReward!]! @derivedFrom(field: "stakingPool")
 }
 
 type StakingPoolV4Position {
