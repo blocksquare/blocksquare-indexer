@@ -9,6 +9,7 @@ import { getDay, getHour } from "../helper/date";
 import { getLoadedConfig } from "../config";
 import { ethers, id } from "ethers";
 import {
+  BOOST_PRECISION,
   buildMerkleTree,
   getPredictedDailyBlockCount,
   getUniswapV4StakingDeployementBlock,
@@ -329,11 +330,11 @@ onBlock(
 
     // Compute total active liquidity and build list of eligible positions.
     // Only positions that are in-range (active liquidity > 0) qualify for rewards.
-    let totalActiveLiquidity = 0n;
+    let totalEffectiveLiquidity = 0n;
     const rewardCandidates: Array<{
       stakedPosition: (typeof activeStakedPositions)[0];
       uniPosition: (typeof uniPositions)[0];
-      activeLiquidity: bigint;
+      effectiveLiquidity: bigint;
       cumulativeReward: bigint;
       existingRewardData?: UserCumulativeReward;
     }> = [];
@@ -351,17 +352,24 @@ onBlock(
       );
       if (activeLiquidity === 0n) continue; // skip out-of-range positions
 
-      totalActiveLiquidity += activeLiquidity;
+      // Apply time-based boost to active liquidity.
+      // `timeBoost` is expressed as a percentage with base 100 (e.g. 100 = 1.0x, 122 = 1.22x).
+      // This increases a position's reward share proportionally to its lock duration.
+      // Effective liquidity = active liquidity × boost multiplier.
+      const effectiveLiquidity =
+        (activeLiquidity * stakedPosition.timeBoost) / BOOST_PRECISION;
+
+      totalEffectiveLiquidity += effectiveLiquidity;
       rewardCandidates.push({
         cumulativeReward: 0n, // will be set after cumulative calculation
         stakedPosition,
         uniPosition,
-        activeLiquidity,
+        effectiveLiquidity,
       });
     }
 
     // If no positions are in-range, no rewards to distribute.
-    if (totalActiveLiquidity === 0n) return;
+    if (totalEffectiveLiquidity === 0n) return;
 
     // Calculate cumulative rewards and build merkle tree leaves
     const merkleLeaves: Array<{ tokenId: bigint; cumulativeReward: bigint }> =
@@ -370,8 +378,8 @@ onBlock(
     for (let i = 0; i < rewardCandidates.length; i++) {
       const candidate = rewardCandidates[i];
       const rewardAmount =
-        (TOTAL_DAILY_REWARDS * candidate.activeLiquidity) /
-        totalActiveLiquidity;
+        (TOTAL_DAILY_REWARDS * candidate.effectiveLiquidity) /
+        totalEffectiveLiquidity;
 
       // The staking position ID (chainId-owner-tokenId) is all we need for the cumulative reward data too
       const userRewardId = candidate.stakedPosition.id;
@@ -551,7 +559,6 @@ UniswapV4Staking.RewardsClaimed.handler(async ({ event, context }) => {
 
   const stakingPool = await context.StakingPoolV4.get(stakingEntityId);
   if (!stakingPool) return;
-
 
   const walletEntityId = `${chainId}-${from}`;
   const cumilativeRewardsDataEntityId = `${walletEntityId}-${tokenId}`;

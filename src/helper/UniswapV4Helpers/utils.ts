@@ -8,6 +8,11 @@ export const TOTAL_MONTHLY_REWARDS = parseUnits("300", 18);
 // Daily reward amount = monthly / 30 (integer division).
 export const TOTAL_DAILY_REWARDS = TOTAL_MONTHLY_REWARDS / 30n;
 
+// Precision factor for timeBoost values.
+// A boost of 100 represents 1.0x (no boost), 122 = 1.22x, etc.
+// Used to normalize boosted liquidity calculations.
+export const BOOST_PRECISION = 100n;
+
 const SEPOLIA_CHAIN_ID = 11155111;
 
 /**
