@@ -83,4 +83,5 @@ export const testnetConfig: Config = {
   ),
   zeroExAddress: getAddress('0xdef1c0ded9bec7f1a1670819833240f027b25eff'),
   zeroExStartBlock: 0,
+  oneInchPostInteractionAddress: getAddress('0xC8B2029bF486c62d2086D767bA1C23b9485da29E')
 };

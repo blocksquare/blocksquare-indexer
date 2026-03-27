@@ -126,6 +126,11 @@ contracts:
     handler: src/handler/ZeroEx.ts
     events:
       - event: LimitOrderFilled
+  - name: OneInchPostInteraction
+    abi_file_path: abis/OneInchPostInteraction.json
+    handler: src/handler/OneInchPostInteraction.ts
+    events:
+      - event: PostInteractionOrderFilled
   - name: PriceFeedRegistry
     abi_file_path: ./abis/PriceFeedRegistry.json
     handler: src/handler/PriceFeedRegistryHandler.ts

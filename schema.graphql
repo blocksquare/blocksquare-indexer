@@ -16,6 +16,11 @@ enum PropertyStakingPoolType {
     LANDHIVE
 }
 
+enum LimitOrderProtocol {
+    ZeroEx
+    OneInch
+}
+
 ### Price Tracking ###
 
 type AssetPairPrice @entity {
@@ -92,6 +97,7 @@ type PropertyToken {
   totalValueTraded: BigInt!
   transfers: [PropertyTokenTransfer!]! @derivedFrom(field: "propertyToken")
   pendingRevenues: [PropertyTokenRevenue!]! @derivedFrom(field: "propertyToken")
+  revenueClaims: [PropertyTokenRevenueClaim!]! @derivedFrom(field: "propertyToken")
   revenueDistributions: [PropertyTokenRevenueDistribution!]!
     @derivedFrom(field: "propertyToken")
   records: [PropertyTokenRecord!]! @derivedFrom(field: "propertyToken")
@@ -183,6 +189,17 @@ type PropertyTokenRevenue {
   claimedRevenue: BigInt!
 }
 
+type PropertyTokenRevenueClaim {
+  id: ID!
+  chainId: Int!
+  transactionHash: Bytes!
+  blockNumber: Int!
+  blockTimestamp: Int!
+  propertyToken: PropertyToken!
+  wallet: Wallet!
+  amount: BigInt!
+}
+
 type PropertyTokenTrade {
   id: ID!
   chainID: Int!
@@ -198,6 +215,7 @@ type PropertyTokenTrade {
   takerTokenFilledAmount: BigInt!
   makerTokenFilledAmount: BigInt!
   propertyValuation: BigInt!
+  protocol: LimitOrderProtocol!
 }
 
 type PropertyTokenTradeCounts {
@@ -278,6 +296,7 @@ type Wallet {
     @derivedFrom(field: "to")
   propertyInvestments: [PropertyTokenInvestment!]! @derivedFrom(field: "wallet")
   pendingRevenues: [PropertyTokenRevenue!]! @derivedFrom(field: "wallet")
+  revenueClaims: [PropertyTokenRevenueClaim!]! @derivedFrom(field: "wallet")
 }
 
 ### Oceanpoint ###
@@ -400,6 +419,8 @@ type MarketplacePool {
   vAmount: BigInt!
   positions: [MarketplacePoolPosition!]! @derivedFrom(field: "pool")
   stats: [MarketplacePoolRecord!]! @derivedFrom(field: "pool")
+  isCpCollateralLiquidated: Boolean!
+  cpCollateralLiquidatedAt: Int!
 }
 
 type MarketplacePoolPosition {

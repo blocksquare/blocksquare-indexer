@@ -29,6 +29,7 @@ export type Config = {
   usersRegistryAddress: string;
   zeroExAddress: string;
   zeroExStartBlock: number;
+  oneInchPostInteractionAddress?: string;
 };
 
 export type PropertyTokenRevenueDistributionInterval = {

@@ -5,3 +5,8 @@ export enum PropertyStakingPoolType {
   LANDHIVE = "LANDHIVE",
 }
 
+export enum LimitOrderProtocol {
+    ZeroEx = "ZeroEx",
+    OneInch = "OneInch",
+}
+

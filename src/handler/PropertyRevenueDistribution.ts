@@ -1,6 +1,7 @@
 import { PropertyRevenueDistribution } from 'generated';
 import { getNewPropertyTokenRevenue } from '../helper/PropertyTokenRevenue';
 import { getNewPropertyTokenRevenueDistribution } from '../helper/PropertyTokenRevenueDistribution';
+import { getNewPropertyTokenRevenueClaim } from '../helper/PropertyTokenRevenueClaim';
 import { getAPY } from '../helper/APYCalculation';
 
 PropertyRevenueDistribution.RevenueAdded.handler(async ({ event, context }) => {
@@ -85,4 +86,21 @@ PropertyRevenueDistribution.RevenueClaimed.handler(async ({ event, context }) =>
       pendingRevenue: propertyTokenRevenue.pendingRevenue - event.params.amount,
       claimedRevenue: propertyTokenRevenue.claimedRevenue + event.params.amount,
     });
+
+    // Create revenue claim record
+    const propertyTokenId = `${event.chainId}-${event.params.property}`;
+    const walletId = `${event.chainId}-${event.params.user}`;
+
+    const revenueClaim = getNewPropertyTokenRevenueClaim(
+      event.chainId,
+      event.transaction.hash,
+      event.block.number,
+      event.block.timestamp,
+      event.logIndex,
+      propertyTokenId,
+      walletId,
+      event.params.amount
+    );
+
+    context.PropertyTokenRevenueClaim.set(revenueClaim);
 });
