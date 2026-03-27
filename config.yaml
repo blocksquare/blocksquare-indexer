@@ -131,7 +131,6 @@ contracts:
     handler: src/handler/OneInchPostInteraction.ts
     events:
       - event: PostInteractionOrderFilled
-  # This is used to index mainnet for price feeds
   - name: PriceFeedRegistry
     abi_file_path: ./abis/PriceFeedRegistry.json
     handler: src/handler/PriceFeedRegistryHandler.ts
@@ -142,75 +141,58 @@ contracts:
     handler: src/handler/PriceFeedDataHandler.ts
     events:
       - event: AnswerUpdated
-unordered_multichain_mode: false
 networks:
-  ### START PRICE FEED SECTION  ###
-  # We fetch the prices of BST and other currencies directly from mainnet as they are not available on testnet
-  # Comment this section out if you want fast sync for testing without fetching prices
   - id: 1
-    start_block: 0
-    contracts:
-      - name: PriceFeedRegistry
-        address:
-          - 0x47fb2585d2c56fe188d0e6ec628a38b74fceeedf
-      - name: UniswapPoolV2
-        address:
-          # Mainnet BST/ETH pool
-          - 0x0e85fb1be698e777f2185350b4a52e5ee8df51a6
-      - name: PriceDataFeed
-
-  ### END PRICE FEED SECTION ###
-
-  ### START ECOSYSTEM NETWORK SPECIFIC SECTION ###
-  - id: 11155111
     start_block: 0
     contracts:
       - name: BlocksquareToken
         address:
-          - 0x7000Ec7486d8c6f9bd9FfA930f9ACE2D9564d02b
+          - 0x509A38b7a1cC0dcd83Aa9d06214663D9eC7c7F4a
       - name: CertifiedPartners
         address:
-          - 0x2192d72E0648277Ae50f2Ce516c5fD1B90572030
+          - 0x8DbB99cc3721f5c9cc7c9E92Db260813cf78cdd3
       - name: DataStorageProxy
         address:
-          - 0x846D955EBe2e79ae61E7B8e7f4568103f095D26F
+          - 0x8C2A858FE7b2bf155247C7F528c6CA7B186197B5
       - name: GovernancePool
         address:
-          - 0x145a6DB84aEd0Fe46E4cCB3f96930100418f00A2
+          - 0x6F1E92fb8a685AaA0710BAD194D7B1aa839F7F8a
       - name: LiquidityStakingPool
-        address: [0x0a654a300eAbDB763d860154bC72C4DD58c64AEF,0x28736062E9659FEc652ceF0608851AB2187eb54e]
+        address: [0x1802F66868d0649687A7a6bc9b8a4292e148dAEC]
       - name: MarketplacePoolFactory
         address:
-          - 0x3a0AD3e022e9CC53a75EA8C4907B6E326a615504
+          - 0x17887106a14f38Bf10512565bdBb5BD7AC12F001
       - name: MarketplacePool
       - name: OceanpointValuation
-        address: [0x00e63d90b0481c8AC9abE68d03ec40B2d3e87E45,0xd88f8CB694fB5684DEDFb68C946749D1FAE64d83,0x15389b98C8050562a6B0Ec6684DFD39F961d0DE9]
+        address: [0xAeEA40Bb8393174459C4016BCe2625076Fe4DefF,0x14db5B377d13eC9f9e7747f42D71634b5Ef5a335,0x05F5b75d80291910a54b65AEa9B45F549CDd0AcC,0x3C18b35E8E919224eA4099acC0d280Eda76A71C0]
       - name: PropertyToken
       - name: PropertyTokenOffering
         address:
-          - 0x223aD3AC5Df27F8e062A805A04996F00f1fEAcEb
+          - 0x25862c4fB4ce9d6Ff9B463488e0EC656fA08dE78
       - name: PropertyFactory
         address:
-          - 0x67b899aF3F27072f15f22Bb33E5f1dF2696CAFcB
+          - 0x1Ae91a263A690BF2129cf0b3aCAc92bBB67E6685
       - name: PropertyRegistry
         address:
-          - 0x0be43Cfd32a91cC277489b547598b6428ef9A584
+          - 0x05325C1Ab1440df7214dB38F676F95999729267B
       - name: PropertyRevenueDistribution
         address:
-          - 0xbc9bf93d96096F42364DBD2c2b32a317fd06C8cB
+          - 0xBcb1757cDAdeC25B6cAdC1A83953A70eDa2Da8cb
       - name: PropertyStakingPool
-        address: [0x9CaE63f8e6b931D269A449A937F742a5d1B3A4A9,0x00C92C11dB2E4229291398000132c3Cfdd4Daac1,0xEA819503da30628F862e1D9F5944aD5d3e347A96]
+        address: [0x13299657e662894b933Bb3Ee73F7f8dA94b55451,0x57ba886442d248C2E7a3a5826F2b183A22eCc73e,0x6f5eCF8a8DADAAC3c8440A080c9271f845f34b07,0xFC7cd245913691Fb2d305a0fc60A1DadD1eCdeBF]
+      - name: UniswapPoolV2
+        address: [0x0E85fB1be698E777F2185350b4A52E5eE8DF51A6]
       - name: Users
         address:
-          - 0xCd0c1845552DD0b2EFCBa0cF0ECd341A0B99d49a
+          - 0x13344D0Cb96b17dF81C4171Ce47E14ff6c1975f7
       - name: ZeroEx
         address:
           - 0xDef1C0ded9bec7F1a1670819833240f027b25EfF
-        start_block: 0
+        start_block: 17337444
       - name: OneInchPostInteraction
         address:
           - 0xC8B2029bF486c62d2086D767bA1C23b9485da29E
-      - name: UniswapPoolV2
-        address: [0xc026cBA28A7f94C8Bc16547e979295191b2FD671,0x0E85fB1be698E777F2185350b4A52E5eE8DF51A6]
-
-  ### END ECOSYSTEM NETWORK SPECIFIC SECTION ###
+      - name: PriceFeedRegistry
+        address:
+          - 0x47fb2585d2c56fe188d0e6ec628a38b74fceeedf
+      - name: PriceDataFeed
