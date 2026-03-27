@@ -187,9 +187,6 @@ networks:
         address:
           - <%= config.zeroExAddress %>
         start_block: <%= config.zeroExStartBlock %>
-      - name: OneInchPostInteraction
-        address:
-          - <%= config.oneInchPostInteractionAddress %>
       - name: PriceFeedRegistry
         address:
           - 0x47fb2585d2c56fe188d0e6ec628a38b74fceeedf

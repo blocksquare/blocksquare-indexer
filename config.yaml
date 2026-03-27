@@ -189,9 +189,6 @@ networks:
         address:
           - 0xDef1C0ded9bec7F1a1670819833240f027b25EfF
         start_block: 17337444
-      - name: OneInchPostInteraction
-        address:
-          - 0xC8B2029bF486c62d2086D767bA1C23b9485da29E
       - name: PriceFeedRegistry
         address:
           - 0x47fb2585d2c56fe188d0e6ec628a38b74fceeedf
