@@ -129,6 +129,19 @@ contracts:
     handler: src/handler/OneInchPostInteraction.ts
     events:
       - event: PostInteractionOrderFilled
+  - name: PropertyTokenOfferingV2
+    abi_file_path: abis/PropertyTokenOfferingV2.json
+    handler: src/handler/PropertyTokenOfferingV2.ts
+    events:
+      - event: MainSaleAdded
+      - event: PresaleAdded
+      - event: Invested
+      - event: PresaleTokensMinted
+      - event: ClaimInvestment
+      - event: MainSaleCanceled
+      - event: PresaleCanceled
+      - event: MainSaleInvestmentsRefunded
+      - event: PresaleInvestmentsRefunded
   - name: PriceFeedRegistry
     abi_file_path: ./abis/PriceFeedRegistry.json
     handler: src/handler/PriceFeedRegistryHandler.ts
@@ -167,6 +180,10 @@ networks:
       - name: PropertyTokenOffering
         address:
           - <%= config.propertyTokenOfferingAddress %>
+      - name: PropertyTokenOfferingV2
+<% if (config.propertyTokenOfferingV2Address) { %>        address:
+          - <%= config.propertyTokenOfferingV2Address %>
+<% } %>
       - name: PropertyFactory
         address:
           - <%= config.propertyFactoryAddress %>
