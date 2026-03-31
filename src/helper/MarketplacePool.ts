@@ -4,7 +4,7 @@ import { MarketplacePool } from 'generated/src/Types.gen';
 
 export const getNewMarketplacePool = (
   chainId: number,
-  marketplaceAddress: string
+  marketplaceAddress: string,
 ): MarketplacePool => {
   return {
     id: `${chainId}-${marketplaceAddress}`,
@@ -38,7 +38,7 @@ export const getNewMarketplacePool = (
 
 export const getMarketplacePoolRecord = (
   pool: MarketplacePool,
-  timestamp: number
+  timestamp: number,
 ): MarketplacePoolRecord => {
   const { id: hourId, start: hourStart } = getHour(timestamp);
   const { start: dayStart } = getDay(timestamp);
@@ -61,7 +61,7 @@ export const getMarketplacePoolRecord = (
 export const getNewMarketplacePoolPosition = (
   chainId: number,
   poolAddress: string,
-  walletAddress: string
+  walletAddress: string,
 ): MarketplacePoolPosition => {
   return {
     id: `${chainId}-${poolAddress}-${walletAddress}`,

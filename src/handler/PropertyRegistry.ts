@@ -1,9 +1,6 @@
 import { PropertyRegistry } from 'generated';
 import { iso1A2Code } from '@rapideditor/country-coder';
-import {
-  getPropertyTokenRecord,
-  calculateWeightedNAVDeviation,
-} from '../helper/PropertyToken';
+import { getPropertyTokenRecord, calculateWeightedNAVDeviation } from '../helper/PropertyToken';
 import {
   getGlobalRecord,
   INITIAL_GLOBAL_ENTITY,
@@ -12,7 +9,7 @@ import {
 
 PropertyRegistry.IPFSHashChanged.handler(async ({ event, context }) => {
   const propertyTokenLoaded = await context.PropertyToken.get(
-    `${event.chainId}-${event.params.property}`
+    `${event.chainId}-${event.params.property}`,
   );
   if (propertyTokenLoaded) {
     Error;
@@ -25,7 +22,7 @@ PropertyRegistry.IPFSHashChanged.handler(async ({ event, context }) => {
 
 PropertyRegistry.NameAndSymbolChange.handler(async ({ event, context }) => {
   const propertyTokenLoaded = await context.PropertyToken.get(
-    `${event.chainId}-${event.params.property}`
+    `${event.chainId}-${event.params.property}`,
   );
   if (propertyTokenLoaded) {
     context.PropertyToken.set({
@@ -37,69 +34,64 @@ PropertyRegistry.NameAndSymbolChange.handler(async ({ event, context }) => {
 });
 
 // Todo at historic data tracking
-PropertyRegistry.PropertyBasicInfoChanged.handler(
-  async ({ event, context }) => {
-    const [activeProperties, global, propertyTokenLoaded] = await Promise.all([
-      context.PropertyToken.getWhere.propertyValuation.gt(0n),
-      context.Global.getOrCreate(INITIAL_GLOBAL_ENTITY),
-      context.PropertyToken.get(`${event.chainId}-${event.params.property}`),
-    ]);
+PropertyRegistry.PropertyBasicInfoChanged.handler(async ({ event, context }) => {
+  const [activeProperties, global, propertyTokenLoaded] = await Promise.all([
+    context.PropertyToken.getWhere.propertyValuation.gt(0n),
+    context.Global.getOrCreate(INITIAL_GLOBAL_ENTITY),
+    context.PropertyToken.get(`${event.chainId}-${event.params.property}`),
+  ]);
 
-    if (propertyTokenLoaded) {
-      const latLngRegex = /(-?\d+(?:\.\d+))(?:,|\s*)\s*(-?\d+(?:\.\d+)?)/g;
-      const latLngResult = latLngRegex.exec(event.params.geoLocation);
+  if (propertyTokenLoaded) {
+    const latLngRegex = /(-?\d+(?:\.\d+))(?:,|\s*)\s*(-?\d+(?:\.\d+)?)/g;
+    const latLngResult = latLngRegex.exec(event.params.geoLocation);
 
-      if (!latLngResult) throw new Error('Invalid geoLocation');
-      const lat = Number(latLngResult[1]);
-      const lng = Number(latLngResult[2]);
+    if (!latLngResult) throw new Error('Invalid geoLocation');
+    const lat = Number(latLngResult[1]);
+    const lng = Number(latLngResult[2]);
 
-      if (!lat || !lng) throw new Error('Invalid geoLocation');
+    if (!lat || !lng) throw new Error('Invalid geoLocation');
 
-      const countryCode = iso1A2Code([lng, lat]) || '';
+    const countryCode = iso1A2Code([lng, lat]) || '';
 
-      const propertyTokenUpdated = {
-        ...propertyTokenLoaded,
-        streetLocation: event.params.streetLocation,
-        geoLocation: event.params.geoLocation,
-        lat,
-        lng,
-        countryCode,
-        propertyValuationCurrency: event.params.propertyValuationCurrency,
-        propertyValuation: event.params.propertyValuation,
-        propertyValuationUpdateTimestamp:
-          event.params.propertyValuation !==
-          propertyTokenLoaded.propertyValuation
-            ? event.block.timestamp
-            : propertyTokenLoaded.propertyValuationUpdateTimestamp,
-        weightedNAVDeviation: calculateWeightedNAVDeviation(
-          propertyTokenLoaded.tokenValuation,
-          event.params.propertyValuation,
-          propertyTokenLoaded.totalSupply
-        ),
-      };
+    const propertyTokenUpdated = {
+      ...propertyTokenLoaded,
+      streetLocation: event.params.streetLocation,
+      geoLocation: event.params.geoLocation,
+      lat,
+      lng,
+      countryCode,
+      propertyValuationCurrency: event.params.propertyValuationCurrency,
+      propertyValuation: event.params.propertyValuation,
+      propertyValuationUpdateTimestamp:
+        event.params.propertyValuation !== propertyTokenLoaded.propertyValuation
+          ? event.block.timestamp
+          : propertyTokenLoaded.propertyValuationUpdateTimestamp,
+      weightedNAVDeviation: calculateWeightedNAVDeviation(
+        propertyTokenLoaded.tokenValuation,
+        event.params.propertyValuation,
+        propertyTokenLoaded.totalSupply,
+      ),
+    };
 
-      context.PropertyToken.set(propertyTokenUpdated);
-      context.PropertyTokenRecord.set(
-        getPropertyTokenRecord(propertyTokenUpdated, event.block.timestamp)
-      );
+    context.PropertyToken.set(propertyTokenUpdated);
+    context.PropertyTokenRecord.set(
+      getPropertyTokenRecord(propertyTokenUpdated, event.block.timestamp),
+    );
 
-      const globalUpdated = updateGlobalPropertiesCountAndValuation(
-        global,
-        activeProperties,
-        propertyTokenUpdated
-      );
+    const globalUpdated = updateGlobalPropertiesCountAndValuation(
+      global,
+      activeProperties,
+      propertyTokenUpdated,
+    );
 
-      context.Global.set(globalUpdated);
-      context.GlobalRecord.set(
-        getGlobalRecord(globalUpdated, event.block.timestamp)
-      );
-    }
+    context.Global.set(globalUpdated);
+    context.GlobalRecord.set(getGlobalRecord(globalUpdated, event.block.timestamp));
   }
-);
+});
 
 PropertyRegistry.PropertyInfoAdded.handler(async ({ event, context }) => {
   const propertyTokenLoaded = await context.PropertyToken.get(
-    `${event.chainId}-${event.params.property}`
+    `${event.chainId}-${event.params.property}`,
   );
   if (propertyTokenLoaded) {
     context.PropertyToken.set({
@@ -114,7 +106,7 @@ PropertyRegistry.PropertyInfoAdded.handler(async ({ event, context }) => {
 
 PropertyRegistry.PropertyInfoChanged.handler(async ({ event, context }) => {
   const propertyTokenLoaded = await context.PropertyToken.get(
-    `${event.chainId}-${event.params.property}`
+    `${event.chainId}-${event.params.property}`,
   );
   if (propertyTokenLoaded) {
     context.PropertyToken.set({
@@ -140,37 +132,34 @@ PropertyRegistry.PropertyValuationChange.handler(async ({ event, context }) => {
     ...propertyTokenLoaded,
     propertyValuation: event.params.newValuationProperty,
     propertyValuationUpdateTimestamp:
-      event.params.newValuationProperty !==
-      propertyTokenLoaded.propertyValuation
+      event.params.newValuationProperty !== propertyTokenLoaded.propertyValuation
         ? event.block.timestamp
         : propertyTokenLoaded.propertyValuationUpdateTimestamp,
     weightedNAVDeviation: calculateWeightedNAVDeviation(
       propertyTokenLoaded.tokenValuation,
       event.params.newValuationProperty,
-      propertyTokenLoaded.totalSupply
+      propertyTokenLoaded.totalSupply,
     ),
   };
 
   const globalUpdated = updateGlobalPropertiesCountAndValuation(
     global,
     activeProperties,
-    propertyTokenUpdated
+    propertyTokenUpdated,
   );
 
   context.PropertyToken.set(propertyTokenUpdated);
   context.PropertyTokenRecord.set(
-    getPropertyTokenRecord(propertyTokenUpdated, event.block.timestamp)
+    getPropertyTokenRecord(propertyTokenUpdated, event.block.timestamp),
   );
 
   context.Global.set(globalUpdated);
-  context.GlobalRecord.set(
-    getGlobalRecord(globalUpdated, event.block.timestamp)
-  );
+  context.GlobalRecord.set(getGlobalRecord(globalUpdated, event.block.timestamp));
 });
 
 PropertyRegistry.TokenValuationChange.handler(async ({ event, context }) => {
   const propertyTokenLoaded = await context.PropertyToken.getOrThrow(
-    `${event.chainId}-${event.params.property}`
+    `${event.chainId}-${event.params.property}`,
   );
 
   const propertyTokenUpdated = {
@@ -179,12 +168,12 @@ PropertyRegistry.TokenValuationChange.handler(async ({ event, context }) => {
     weightedNAVDeviation: calculateWeightedNAVDeviation(
       event.params.newTokenValuation,
       propertyTokenLoaded.propertyValuation,
-      propertyTokenLoaded.totalSupply
+      propertyTokenLoaded.totalSupply,
     ),
   };
 
   context.PropertyToken.set(propertyTokenUpdated);
   context.PropertyTokenRecord.set(
-    getPropertyTokenRecord(propertyTokenUpdated, event.block.timestamp)
+    getPropertyTokenRecord(propertyTokenUpdated, event.block.timestamp),
   );
 });

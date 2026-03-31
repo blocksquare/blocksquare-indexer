@@ -1,12 +1,12 @@
 import { OceanpointTokenInformation } from 'generated';
-import {PropertyStakingPoolType} from "../types/enums";
+import { PropertyStakingPoolType } from '../types/enums';
 
 export const getNewOceanpointTokenInformation = (
   chainId: number,
   propertyAddress: string,
   contractAddress: string,
   propertyStakingContractAddress: string,
-  poolType: PropertyStakingPoolType
+  poolType: PropertyStakingPoolType,
 ): OceanpointTokenInformation => {
   return {
     id: `${chainId}-${propertyAddress}-${contractAddress}`,

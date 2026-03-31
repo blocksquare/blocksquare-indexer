@@ -3,17 +3,14 @@ import { getLoadedConfig } from '../config';
 import { formatTo8Decimals } from '../helper/format';
 import { ZeroAddress } from 'ethers';
 import { getDay, getHour } from '../helper/date';
-import {
-  getAssetPairData,
-  getNewAssetPairPrice,
-} from '../helper/UniswapPoolV2';
+import { getAssetPairData, getNewAssetPairPrice } from '../helper/UniswapPoolV2';
 
 const uniswapWethBstPoolAddress = getLoadedConfig().uniswapPoolContracts.find(
-  (contract) => contract.assetPairId === 'BST/ETH'
+  (contract) => contract.assetPairId === 'BST/ETH',
 )?.address;
 
 const uniswapBstPointPoolAddress = getLoadedConfig().uniswapPoolContracts.find(
-  (contract) => contract.assetPairId === 'BST/POINT'
+  (contract) => contract.assetPairId === 'BST/POINT',
 )?.address;
 
 UniswapPoolV2.Swap.handler(async ({ event, context }) => {
@@ -34,16 +31,11 @@ UniswapPoolV2.Swap.handler(async ({ event, context }) => {
       const amount1Out = BigDecimal(event.params.amount1Out.toString());
 
       // We need to check on which side of the swap BST is and calculate the price accordingly
-      const bstToEth = amount0In.gt(0)
-        ? amount1Out.div(amount0In)
-        : amount1In.div(amount0Out);
+      const bstToEth = amount0In.gt(0) ? amount1Out.div(amount0In) : amount1In.div(amount0Out);
 
-      const bstToUsdPrecise = bstToEth.multipliedBy(
-        ethUSDAssetPair.latestPrice
-      );
+      const bstToUsdPrecise = bstToEth.multipliedBy(ethUSDAssetPair.latestPrice);
 
-      const { formatted: bstToUsd, formattedBI: bstToUsdBI } =
-        formatTo8Decimals(bstToUsdPrecise);
+      const { formatted: bstToUsd, formattedBI: bstToUsdBI } = formatTo8Decimals(bstToUsdPrecise);
 
       const assetPairId = 'BST/USD';
       const { start: hourStart } = getHour(event.block.timestamp);
@@ -58,7 +50,7 @@ UniswapPoolV2.Swap.handler(async ({ event, context }) => {
         bstToUsdBI,
         bstToUsd,
         dayStart,
-        hourStart
+        hourStart,
       );
       context.AssetPairPrice.set(assetPairPrice);
 
@@ -74,11 +66,7 @@ UniswapPoolV2.Swap.handler(async ({ event, context }) => {
     if (bstUSDAssetPair) {
       if (event.srcAddress === uniswapBstPointPoolAddress) {
         // BST:POINT Liquidity Pool
-        let { assetPairPrice, assetPairId } = getAssetPairData(
-          bstUSDAssetPair,
-          'POINT',
-          event
-        );
+        let { assetPairPrice, assetPairId } = getAssetPairData(bstUSDAssetPair, 'POINT', event);
 
         context.AssetPairPrice.set(assetPairPrice);
 

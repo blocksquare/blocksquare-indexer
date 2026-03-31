@@ -20,7 +20,7 @@ Users.AddedWallet.handler(async ({ event, context }) => {
 Users.RemovedWallet.handler(async ({ event, context }) => {
   const wallet = await context.Wallet.getOrThrow(
     `${event.chainId}-${event.params.wallet}`,
-    'UsersContract_RemovedWallet_handler: Wallet not found'
+    'UsersContract_RemovedWallet_handler: Wallet not found',
   );
 
   context.Wallet.set({

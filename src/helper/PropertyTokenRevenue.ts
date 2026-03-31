@@ -3,7 +3,7 @@ import { PropertyToken } from 'generated/src/Types.gen';
 
 export const getNewPropertyTokenRevenue = (
   propertyToken: PropertyToken,
-  walletAddress: string
+  walletAddress: string,
 ): PropertyTokenRevenue => {
   return {
     id: `${propertyToken.id}-${walletAddress}`,
