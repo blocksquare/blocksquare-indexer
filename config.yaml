@@ -205,7 +205,6 @@ networks:
       - name: PropertyTokenOfferingV2
         address:
           - 0x53A73e55B71e21768474216a723f315f3c53df7B
-
       - name: PropertyFactory
         address:
           - 0x67b899aF3F27072f15f22Bb33E5f1dF2696CAFcB

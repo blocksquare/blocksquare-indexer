@@ -181,9 +181,7 @@ networks:
         address:
           - <%= config.propertyTokenOfferingAddress %>
       - name: PropertyTokenOfferingV2
-<% if (config.propertyTokenOfferingV2Address) { %>        address:
           - <%= config.propertyTokenOfferingV2Address %>
-<% } %>
       - name: PropertyFactory
         address:
           - <%= config.propertyFactoryAddress %>

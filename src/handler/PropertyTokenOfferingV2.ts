@@ -1,22 +1,19 @@
 import { PropertyTokenOfferingV2 } from 'generated';
-import {
-  ensureOfferingV2,
-  getMainSaleId,
-  getOfferingV2Id,
-  getPresaleId,
-} from '../helper/PropertyTokenOfferingV2';
+import { ensureOfferingV2 } from '../helper/PropertyTokenOfferingV2';
 
 // ─── MainSaleAdded ──────────────────────────────────────────────────────────────
 
 PropertyTokenOfferingV2.MainSaleAdded.handler(async ({ event, context }) => {
   const { params } = event;
+  const propertyId = `${event.chainId}-${params.property}`;
+  const mainSaleId = `${propertyId}-${params.mainSaleId}`;
 
-  await ensureOfferingV2(event.chainId, params.property, context);
+  await ensureOfferingV2(event.chainId, propertyId, context);
 
   context.MainSaleOffering.set({
-    id: getMainSaleId(event.chainId, params.property, params.mainSaleId),
+    id: mainSaleId,
     chainId: event.chainId,
-    offering_id: getOfferingV2Id(event.chainId, params.property),
+    offering_id: propertyId,
     startDateTimestamp: Number(params.startDate),
     endDateTimestamp: Number(params.endDate),
     maxInvestment: params.maxInvestment,
@@ -38,13 +35,15 @@ PropertyTokenOfferingV2.MainSaleAdded.handler(async ({ event, context }) => {
 
 PropertyTokenOfferingV2.PresaleAdded.handler(async ({ event, context }) => {
   const { params } = event;
+  const propertyId = `${event.chainId}-${params.property}`;
+  const presaleId = `${propertyId}-${params.presaleId}`;
 
-  await ensureOfferingV2(event.chainId, params.property, context);
+  await ensureOfferingV2(event.chainId, propertyId, context);
 
   context.PresaleOffering.set({
-    id: getPresaleId(event.chainId, params.property, params.presaleId),
+    id: presaleId,
     chainId: event.chainId,
-    offering_id: getOfferingV2Id(event.chainId, params.property),
+    offering_id: propertyId,
     startDateTimestamp: Number(params.startDate),
     endDateTimestamp: Number(params.endDate),
     maxInvestment: params.maxInvestment,
@@ -62,7 +61,7 @@ PropertyTokenOfferingV2.PresaleAdded.handler(async ({ event, context }) => {
 PropertyTokenOfferingV2.Invested.handler(async ({ event, context }) => {
   const { params } = event;
 
-  const mainSaleId = getMainSaleId(event.chainId, params.property, params.mainSaleId);
+  const mainSaleId = `${event.chainId}-${params.property}-${params.mainSaleId}`;
   const [mainSale, wallet] = await Promise.all([
     context.MainSaleOffering.getOrThrow(
       mainSaleId,
@@ -97,7 +96,7 @@ PropertyTokenOfferingV2.Invested.handler(async ({ event, context }) => {
 PropertyTokenOfferingV2.PresaleTokensMinted.handler(async ({ event, context }) => {
   const { params } = event;
 
-  const presaleId = getPresaleId(event.chainId, params.property, params.presaleId);
+  const presaleId = `${event.chainId}-${params.property}-${params.presaleId}`;
   const presale = await context.PresaleOffering.getOrThrow(
     presaleId,
     'PropertyTokenOfferingV2.PresaleTokensMinted: Presale not found',
@@ -115,7 +114,7 @@ PropertyTokenOfferingV2.PresaleTokensMinted.handler(async ({ event, context }) =
 PropertyTokenOfferingV2.ClaimInvestment.handler(async ({ event, context }) => {
   const { params } = event;
 
-  const mainSaleId = getMainSaleId(event.chainId, params.property, params.mainSaleId);
+  const mainSaleId = `${event.chainId}-${params.property}-${params.mainSaleId}`;
   const mainSale = await context.MainSaleOffering.getOrThrow(
     mainSaleId,
     'PropertyTokenOfferingV2.ClaimInvestment: MainSale not found',
@@ -132,7 +131,7 @@ PropertyTokenOfferingV2.ClaimInvestment.handler(async ({ event, context }) => {
 PropertyTokenOfferingV2.MainSaleCanceled.handler(async ({ event, context }) => {
   const { params } = event;
 
-  const mainSaleId = getMainSaleId(event.chainId, params.property, params.mainSaleId);
+  const mainSaleId = `${event.chainId}-${params.property}-${params.mainSaleId}`;
   const mainSale = await context.MainSaleOffering.getOrThrow(
     mainSaleId,
     'PropertyTokenOfferingV2.MainSaleCanceled: MainSale not found',
@@ -149,7 +148,7 @@ PropertyTokenOfferingV2.MainSaleCanceled.handler(async ({ event, context }) => {
 PropertyTokenOfferingV2.PresaleCanceled.handler(async ({ event, context }) => {
   const { params } = event;
 
-  const presaleId = getPresaleId(event.chainId, params.property, params.presaleId);
+  const presaleId = `${event.chainId}-${params.property}-${params.presaleId}`;
   const presale = await context.PresaleOffering.getOrThrow(
     presaleId,
     'PropertyTokenOfferingV2.PresaleCanceled: Presale not found',
@@ -166,7 +165,7 @@ PropertyTokenOfferingV2.PresaleCanceled.handler(async ({ event, context }) => {
 PropertyTokenOfferingV2.MainSaleInvestmentsRefunded.handler(async ({ event, context }) => {
   const { params } = event;
 
-  const mainSaleId = getMainSaleId(event.chainId, params.property, params.mainSaleId);
+  const mainSaleId = `${event.chainId}-${params.property}-${params.mainSaleId}`;
   const mainSale = await context.MainSaleOffering.getOrThrow(
     mainSaleId,
     'PropertyTokenOfferingV2.MainSaleInvestmentsRefunded: MainSale not found',
@@ -183,7 +182,7 @@ PropertyTokenOfferingV2.MainSaleInvestmentsRefunded.handler(async ({ event, cont
 PropertyTokenOfferingV2.PresaleInvestmentsRefunded.handler(async ({ event, context }) => {
   const { params } = event;
 
-  const presaleId = getPresaleId(event.chainId, params.property, params.presaleId);
+  const presaleId = `${event.chainId}-${params.property}-${params.presaleId}`;
   const presale = await context.PresaleOffering.getOrThrow(
     presaleId,
     'PropertyTokenOfferingV2.PresaleInvestmentsRefunded: Presale not found',
