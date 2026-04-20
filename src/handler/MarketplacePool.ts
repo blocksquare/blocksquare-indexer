@@ -2,13 +2,9 @@ import { MarketplacePool } from 'generated';
 import {
   getMarketplacePoolRecord,
   getNewMarketplacePoolPosition,
-  getMarketplacePoolCPInitializedTransaction,
-  getMarketplacePoolDepositTransaction,
-  getMarketplacePoolWithdrawTransaction,
-  getMarketplacePoolRewardTransaction,
-  getMarketplacePoolLiquidateCPCollateralTransaction,
 } from '../helper/MarketplacePool';
 import { getNewWallet } from '../helper/Wallet';
+import { MarketplacePoolTransactionType } from '../types/enums';
 
 MarketplacePool.CPInitialized.handler(async ({ event, context }) => {
   const marketplacePool = await context.MarketplacePool.getOrThrow(
@@ -47,13 +43,19 @@ MarketplacePool.CPInitialized.handler(async ({ event, context }) => {
     if (!cpWallet) {
       context.Wallet.set(getNewWallet(event.chainId, marketplacePool.certifiedPartnerWallet));
     }
-    context.MarketplacePoolTransaction.set(
-      getMarketplacePoolCPInitializedTransaction(
-        { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
-        cpWalletId,
-        event.params.amount
-      )
-    );
+    context.MarketplacePoolTransaction.set({
+      id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+      chainId: event.chainId,
+      pool_id: `${event.chainId}-${event.srcAddress}`,
+      transactionType: MarketplacePoolTransactionType.CP_INITIALIZED,
+      transactionHash: event.transaction.hash,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      wallet_id: cpWalletId,
+      amount: event.params.amount,
+      issuedAmount: undefined,
+      reward: undefined,
+    });
 });
 
 MarketplacePool.Deposit.handler(async ({ event, context }) => {
@@ -101,14 +103,19 @@ MarketplacePool.Deposit.handler(async ({ event, context }) => {
       vAmount: finalMarketplacePoolPosition.vAmount + event.params.outAmount,
     });
 
-    context.MarketplacePoolTransaction.set(
-      getMarketplacePoolDepositTransaction(
-        { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
-        `${event.chainId}-${event.params.owner}`,
-        event.params.inAmount,
-        event.params.outAmount
-      )
-    );
+    context.MarketplacePoolTransaction.set({
+      id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+      chainId: event.chainId,
+      pool_id: `${event.chainId}-${event.srcAddress}`,
+      transactionType: MarketplacePoolTransactionType.DEPOSIT,
+      transactionHash: event.transaction.hash,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      wallet_id: `${event.chainId}-${event.params.owner}`,
+      amount: event.params.inAmount,
+      issuedAmount: event.params.outAmount,
+      reward: undefined,
+    });
 });
 
 MarketplacePool.Withdraw.handler(async ({ event, context }) => {
@@ -145,15 +152,19 @@ MarketplacePool.Withdraw.handler(async ({ event, context }) => {
       rewards: marketplacePoolPosition.rewards + event.params.reward,
     });
 
-    context.MarketplacePoolTransaction.set(
-      getMarketplacePoolWithdrawTransaction(
-        { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
-        `${event.chainId}-${event.params.owner}`,
-        event.params.outAmount,
-        event.params.inAmount,
-        event.params.reward
-      )
-    );
+    context.MarketplacePoolTransaction.set({
+      id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+      chainId: event.chainId,
+      pool_id: `${event.chainId}-${event.srcAddress}`,
+      transactionType: MarketplacePoolTransactionType.WITHDRAW,
+      transactionHash: event.transaction.hash,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      wallet_id: `${event.chainId}-${event.params.owner}`,
+      amount: event.params.outAmount,
+      issuedAmount: event.params.inAmount,
+      reward: event.params.reward,
+    });
 });
 
 MarketplacePool.CPCanWithdraw.handler(async ({ event, context }) => {
@@ -204,13 +215,19 @@ MarketplacePool.Reward.handler(async ({ event, context }) => {
       getMarketplacePoolRecord(marketplacePoolUpdated, event.block.timestamp)
     );
 
-    context.MarketplacePoolTransaction.set(
-      getMarketplacePoolRewardTransaction(
-        { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
-        rewardWalletId,
-        event.params.amount
-      )
-    );
+    context.MarketplacePoolTransaction.set({
+      id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+      chainId: event.chainId,
+      pool_id: `${event.chainId}-${event.srcAddress}`,
+      transactionType: MarketplacePoolTransactionType.REWARD,
+      transactionHash: event.transaction.hash,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      wallet_id: rewardWalletId,
+      amount: event.params.amount,
+      issuedAmount: undefined,
+      reward: undefined,
+    });
 });
 
 MarketplacePool.LockExtended.handler(async ({ event, context }) => {
@@ -244,12 +261,19 @@ MarketplacePool.LiquidateCPCollateral.handler(async ({ event, context }) => {
       getMarketplacePoolRecord(marketplacePoolUpdated, event.block.timestamp)
     );
 
-    context.MarketplacePoolTransaction.set(
-      getMarketplacePoolLiquidateCPCollateralTransaction(
-        { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
-        event.params.amount
-      )
-    );
+    context.MarketplacePoolTransaction.set({
+      id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+      chainId: event.chainId,
+      pool_id: `${event.chainId}-${event.srcAddress}`,
+      transactionType: MarketplacePoolTransactionType.LIQUIDATE_CP_COLLATERAL,
+      transactionHash: event.transaction.hash,
+      blockNumber: event.block.number,
+      blockTimestamp: event.block.timestamp,
+      wallet_id: undefined,
+      amount: event.params.amount,
+      issuedAmount: undefined,
+      reward: undefined,
+    });
 });
 
 MarketplacePool.PoolCampaignConfigured.handler(async ({ event, context }) => {

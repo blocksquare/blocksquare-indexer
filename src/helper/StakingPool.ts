@@ -9,7 +9,6 @@ import {
   StakingPool,
   StakingPoolPosition,
   StakingPoolRecord,
-  StakingPoolTransaction,
   eventLog,
   handlerContext,
 } from 'generated';
@@ -17,6 +16,7 @@ import {
 import { getNewWallet } from './Wallet';
 import { TWO_DAYS_IN_SECONDS } from './constants';
 import { getDay, getHour } from './date';
+import { StakingPoolTransactionType } from '../types/enums';
 
 export const getNewStakingPool = (
   poolId: string,
@@ -84,67 +84,8 @@ export const getStakingPoolRecord = (
   };
 };
 
-type TransactionBase = {
-  chainId: number;
-  poolId: string;
-  transactionHash: string;
-  blockNumber: number;
-  blockTimestamp: number;
-  logIndex: number;
-};
 
-export const getStakingPoolDepositTransaction = (
-  base: TransactionBase,
-  walletId: string,
-  amount: bigint,
-  issuedAmount: bigint
-): StakingPoolTransaction => ({
-  id: `${base.transactionHash}-${base.logIndex}`,
-  chainId: base.chainId,
-  pool_id: `${base.chainId}-${base.poolId}`,
-  transactionType: 'DEPOSIT' as const,
-  transactionHash: base.transactionHash,
-  blockNumber: base.blockNumber,
-  blockTimestamp: base.blockTimestamp,
-  wallet_id: walletId,
-  amount,
-  issuedAmount,
-});
 
-export const getStakingPoolWithdrawTransaction = (
-  base: TransactionBase,
-  walletId: string,
-  amount: bigint,
-  issuedAmount: bigint
-): StakingPoolTransaction => ({
-  id: `${base.transactionHash}-${base.logIndex}`,
-  chainId: base.chainId,
-  pool_id: `${base.chainId}-${base.poolId}`,
-  transactionType: 'WITHDRAW' as const,
-  transactionHash: base.transactionHash,
-  blockNumber: base.blockNumber,
-  blockTimestamp: base.blockTimestamp,
-  wallet_id: walletId,
-  amount,
-  issuedAmount,
-});
-
-export const getStakingPoolRewardTransaction = (
-  base: TransactionBase,
-  walletId: string,
-  amount: bigint
-): StakingPoolTransaction => ({
-  id: `${base.transactionHash}-${base.logIndex}`,
-  chainId: base.chainId,
-  pool_id: `${base.chainId}-${base.poolId}`,
-  transactionType: 'REWARD' as const,
-  transactionHash: base.transactionHash,
-  blockNumber: base.blockNumber,
-  blockTimestamp: base.blockTimestamp,
-  wallet_id: walletId,
-  amount,
-  issuedAmount: undefined,
-});
 
 export const StakingDepositHandler = async (
   event: eventLog<
@@ -204,14 +145,18 @@ export const StakingDepositHandler = async (
     lockedUntil,
   });
 
-  context.StakingPoolTransaction.set(
-    getStakingPoolDepositTransaction(
-      { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
-      `${event.chainId}-${event.params.owner}`,
-      event.params.inAmount,
-      event.params.outAmount
-    )
-  );
+  context.StakingPoolTransaction.set({
+    id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+    chainId: event.chainId,
+    pool_id: `${event.chainId}-${event.srcAddress}`,
+    transactionType: StakingPoolTransactionType.DEPOSIT,
+    transactionHash: event.transaction.hash,
+    blockNumber: event.block.number,
+    blockTimestamp: event.block.timestamp,
+    wallet_id: `${event.chainId}-${event.params.owner}`,
+    amount: event.params.inAmount,
+    issuedAmount: event.params.outAmount,
+  });
 };
 
 export const StakingRewardHandler = async (
@@ -245,13 +190,18 @@ export const StakingRewardHandler = async (
     getStakingPoolRecord(newStakingPoolData, event.block.timestamp)
   );
 
-  context.StakingPoolTransaction.set(
-    getStakingPoolRewardTransaction(
-      { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
-      rewardWalletId,
-      event.params.amount
-    )
-  );
+  context.StakingPoolTransaction.set({
+    id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+    chainId: event.chainId,
+    pool_id: `${event.chainId}-${event.srcAddress}`,
+    transactionType: StakingPoolTransactionType.REWARD,
+    transactionHash: event.transaction.hash,
+    blockNumber: event.block.number,
+    blockTimestamp: event.block.timestamp,
+    wallet_id: rewardWalletId,
+    amount: event.params.amount,
+    issuedAmount: undefined,
+  });
 };
 
 export const StakingWithdrawHandler = async (
@@ -308,12 +258,16 @@ export const StakingWithdrawHandler = async (
     });
   }
 
-  context.StakingPoolTransaction.set(
-    getStakingPoolWithdrawTransaction(
-      { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
-      `${event.chainId}-${event.params.owner}`,
-      event.params.outAmount,
-      event.params.inAmount
-    )
-  );
+  context.StakingPoolTransaction.set({
+    id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+    chainId: event.chainId,
+    pool_id: `${event.chainId}-${event.srcAddress}`,
+    transactionType: StakingPoolTransactionType.WITHDRAW,
+    transactionHash: event.transaction.hash,
+    blockNumber: event.block.number,
+    blockTimestamp: event.block.timestamp,
+    wallet_id: `${event.chainId}-${event.params.owner}`,
+    amount: event.params.outAmount,
+    issuedAmount: event.params.inAmount,
+  });
 };
