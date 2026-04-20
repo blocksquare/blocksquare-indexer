@@ -270,9 +270,31 @@ type Wallet {
     @derivedFrom(field: "to")
   propertyInvestments: [PropertyTokenInvestment!]! @derivedFrom(field: "wallet")
   pendingRevenues: [PropertyTokenRevenue!]! @derivedFrom(field: "wallet")
+  propertyStakingPoolTransactions: [PropertyStakingPoolTransaction!]! @derivedFrom(field: "wallet")
+  marketplacePoolTransactions: [MarketplacePoolTransaction!]! @derivedFrom(field: "wallet")
+  stakingPoolTransactions: [StakingPoolTransaction!]! @derivedFrom(field: "wallet")
 }
 
 ### Oceanpoint ###
+
+enum StakingPoolTransactionType {
+  DEPOSIT
+  WITHDRAW
+  REWARD
+}
+
+type StakingPoolTransaction {
+  id: ID!
+  chainId: Int!
+  pool: StakingPool!
+  transactionType: StakingPoolTransactionType!
+  transactionHash: Bytes!
+  blockNumber: Int!
+  blockTimestamp: Int!
+  wallet: Wallet!
+  amount: BigInt!
+  issuedAmount: BigInt
+}
 
 type StakingPool {
   id: ID!
@@ -286,6 +308,7 @@ type StakingPool {
   totalWithdrawAmount: BigInt!
   positions: [StakingPoolPosition!]! @derivedFrom(field: "pool")
   historyRecords: [StakingPoolRecord!]! @derivedFrom(field: "pool")
+  transactions: [StakingPoolTransaction!]! @derivedFrom(field: "pool")
 }
 
 type StakingPoolPosition {
@@ -311,6 +334,27 @@ type OceanpointTokenInformation {
   apy: BigInt!
 }
 
+enum PropertyStakingPoolTransactionType {
+  DEPOSIT
+  WITHDRAW
+  REWARD
+}
+
+type PropertyStakingPoolTransaction {
+  id: ID!
+  chainId: Int!
+  pool: PropertyStakingPool!
+  transactionType: PropertyStakingPoolTransactionType!
+  transactionHash: Bytes!
+  blockNumber: Int!
+  blockTimestamp: Int!
+  wallet: Wallet!
+  amount: BigInt!
+  issuedAmount: BigInt
+  rewardToUser: BigInt
+  rewardToFeeReceiver: BigInt
+}
+
 type PropertyStakingPool {
   id: ID!
   chainId: Int!
@@ -324,6 +368,7 @@ type PropertyStakingPool {
     @derivedFrom(field: "propertyStakingPool")
   positions: [PropertyStakingPoolPosition!]! @derivedFrom(field: "pool")
   historyRecords: [PropertyStakingPoolRecord!]! @derivedFrom(field: "pool")
+  transactions: [PropertyStakingPoolTransaction!]! @derivedFrom(field: "pool")
 }
 
 type TokenDeposit {
@@ -352,6 +397,28 @@ type PropertyStakingPoolPosition {
 type Reward {
   id: ID!
   chainId: Int!
+}
+
+enum MarketplacePoolTransactionType {
+  CP_INITIALIZED
+  DEPOSIT
+  WITHDRAW
+  REWARD
+  LIQUIDATE_CP_COLLATERAL
+}
+
+type MarketplacePoolTransaction {
+  id: ID!
+  chainId: Int!
+  pool: MarketplacePool!
+  transactionType: MarketplacePoolTransactionType!
+  transactionHash: Bytes!
+  blockNumber: Int!
+  blockTimestamp: Int!
+  wallet: Wallet
+  amount: BigInt!
+  issuedAmount: BigInt
+  reward: BigInt
 }
 
 type MarketplacePool {
@@ -391,6 +458,7 @@ type MarketplacePool {
   vAmount: BigInt!
   positions: [MarketplacePoolPosition!]! @derivedFrom(field: "pool")
   stats: [MarketplacePoolRecord!]! @derivedFrom(field: "pool")
+  transactions: [MarketplacePoolTransaction!]! @derivedFrom(field: "pool")
 }
 
 type MarketplacePoolPosition {

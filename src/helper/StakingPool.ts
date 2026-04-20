@@ -9,6 +9,7 @@ import {
   StakingPool,
   StakingPoolPosition,
   StakingPoolRecord,
+  StakingPoolTransaction,
   eventLog,
   handlerContext,
 } from 'generated';
@@ -83,6 +84,68 @@ export const getStakingPoolRecord = (
   };
 };
 
+type TransactionBase = {
+  chainId: number;
+  poolId: string;
+  transactionHash: string;
+  blockNumber: number;
+  blockTimestamp: number;
+  logIndex: number;
+};
+
+export const getStakingPoolDepositTransaction = (
+  base: TransactionBase,
+  walletId: string,
+  amount: bigint,
+  issuedAmount: bigint
+): StakingPoolTransaction => ({
+  id: `${base.transactionHash}-${base.logIndex}`,
+  chainId: base.chainId,
+  pool_id: `${base.chainId}-${base.poolId}`,
+  transactionType: 'DEPOSIT' as const,
+  transactionHash: base.transactionHash,
+  blockNumber: base.blockNumber,
+  blockTimestamp: base.blockTimestamp,
+  wallet_id: walletId,
+  amount,
+  issuedAmount,
+});
+
+export const getStakingPoolWithdrawTransaction = (
+  base: TransactionBase,
+  walletId: string,
+  amount: bigint,
+  issuedAmount: bigint
+): StakingPoolTransaction => ({
+  id: `${base.transactionHash}-${base.logIndex}`,
+  chainId: base.chainId,
+  pool_id: `${base.chainId}-${base.poolId}`,
+  transactionType: 'WITHDRAW' as const,
+  transactionHash: base.transactionHash,
+  blockNumber: base.blockNumber,
+  blockTimestamp: base.blockTimestamp,
+  wallet_id: walletId,
+  amount,
+  issuedAmount,
+});
+
+export const getStakingPoolRewardTransaction = (
+  base: TransactionBase,
+  walletId: string,
+  amount: bigint
+): StakingPoolTransaction => ({
+  id: `${base.transactionHash}-${base.logIndex}`,
+  chainId: base.chainId,
+  pool_id: `${base.chainId}-${base.poolId}`,
+  transactionType: 'REWARD' as const,
+  transactionHash: base.transactionHash,
+  blockNumber: base.blockNumber,
+  blockTimestamp: base.blockTimestamp,
+  wallet_id: walletId,
+  amount,
+  issuedAmount: undefined,
+});
+
 export const StakingDepositHandler = async (
   event: eventLog<
     GovernancePool_Deposit_eventArgs | LiquidityStakingPool_Deposit_eventArgs
@@ -140,6 +203,15 @@ export const StakingDepositHandler = async (
     issuedAmount: stakingPoolPosition.issuedAmount + event.params.outAmount,
     lockedUntil,
   });
+
+  context.StakingPoolTransaction.set(
+    getStakingPoolDepositTransaction(
+      { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
+      `${event.chainId}-${event.params.owner}`,
+      event.params.inAmount,
+      event.params.outAmount
+    )
+  );
 };
 
 export const StakingRewardHandler = async (
@@ -162,9 +234,23 @@ export const StakingRewardHandler = async (
     ratio: calculatePoolRatio(stakingPool),
   };
 
+  const rewardWalletId = `${event.chainId}-${event.params.from}`;
+  const rewardWallet = await context.Wallet.get(rewardWalletId);
+  if (!rewardWallet) {
+    context.Wallet.set(getNewWallet(event.chainId, event.params.from));
+  }
+
   context.StakingPool.set(newStakingPoolData);
   context.StakingPoolRecord.set(
     getStakingPoolRecord(newStakingPoolData, event.block.timestamp)
+  );
+
+  context.StakingPoolTransaction.set(
+    getStakingPoolRewardTransaction(
+      { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
+      rewardWalletId,
+      event.params.amount
+    )
   );
 };
 
@@ -221,4 +307,13 @@ export const StakingWithdrawHandler = async (
       stakedAmount: newStakedAmount,
     });
   }
+
+  context.StakingPoolTransaction.set(
+    getStakingPoolWithdrawTransaction(
+      { chainId: event.chainId, poolId: event.srcAddress, transactionHash: event.transaction.hash, blockNumber: event.block.number, blockTimestamp: event.block.timestamp, logIndex: event.logIndex },
+      `${event.chainId}-${event.params.owner}`,
+      event.params.outAmount,
+      event.params.inAmount
+    )
+  );
 };

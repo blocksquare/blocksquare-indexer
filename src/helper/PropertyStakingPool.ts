@@ -3,6 +3,7 @@ import {
   BigDecimal,
   PropertyStakingPoolPosition,
   PropertyStakingPoolRecord,
+  PropertyStakingPoolTransaction,
   TokenDeposit,
 } from 'generated';
 
@@ -93,6 +94,76 @@ export const getPropertyStakingPoolRecord = (
     tvl: pool.tvl,
   };
 };
+
+type TransactionBase = {
+  chainId: number;
+  poolId: string;
+  transactionHash: string;
+  blockNumber: number;
+  blockTimestamp: number;
+  logIndex: number;
+};
+
+export const getPropertyStakingPoolDepositTransaction = (
+  base: TransactionBase,
+  walletId: string,
+  amount: bigint,
+  issuedAmount: bigint
+): PropertyStakingPoolTransaction => ({
+  id: `${base.transactionHash}-${base.logIndex}`,
+  chainId: base.chainId,
+  pool_id: `${base.chainId}-${base.poolId}`,
+  transactionType: 'DEPOSIT' as const,
+  transactionHash: base.transactionHash,
+  blockNumber: base.blockNumber,
+  blockTimestamp: base.blockTimestamp,
+  wallet_id: walletId,
+  amount,
+  issuedAmount,
+  rewardToUser: undefined,
+  rewardToFeeReceiver: undefined,
+});
+
+export const getPropertyStakingPoolWithdrawTransaction = (
+  base: TransactionBase,
+  walletId: string,
+  amount: bigint,
+  issuedAmount: bigint,
+  rewardToUser: bigint,
+  rewardToFeeReceiver: bigint
+): PropertyStakingPoolTransaction => ({
+  id: `${base.transactionHash}-${base.logIndex}`,
+  chainId: base.chainId,
+  pool_id: `${base.chainId}-${base.poolId}`,
+  transactionType: 'WITHDRAW' as const,
+  transactionHash: base.transactionHash,
+  blockNumber: base.blockNumber,
+  blockTimestamp: base.blockTimestamp,
+  wallet_id: walletId,
+  amount,
+  issuedAmount,
+  rewardToUser,
+  rewardToFeeReceiver,
+});
+
+export const getPropertyStakingPoolRewardTransaction = (
+  base: TransactionBase,
+  walletId: string,
+  amount: bigint
+): PropertyStakingPoolTransaction => ({
+  id: `${base.transactionHash}-${base.logIndex}`,
+  chainId: base.chainId,
+  pool_id: `${base.chainId}-${base.poolId}`,
+  transactionType: 'REWARD' as const,
+  transactionHash: base.transactionHash,
+  blockNumber: base.blockNumber,
+  blockTimestamp: base.blockTimestamp,
+  wallet_id: walletId,
+  amount,
+  issuedAmount: undefined,
+  rewardToUser: undefined,
+  rewardToFeeReceiver: undefined,
+});
 
 export function getValuationAddressForPropertyStakingPool(
   poolAddress: string
