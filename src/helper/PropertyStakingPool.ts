@@ -10,10 +10,7 @@ import { getDay, getHour } from './date';
 import { getLoadedConfig } from '../config';
 import { PropertyStakingPool } from 'generated/src/Types.gen';
 import { PropertyStakingPoolType } from '../types/enums';
-export const getNewPropertyStakingPool = (
-  chainId: number,
-  poolId: string
-): PropertyStakingPool => {
+export const getNewPropertyStakingPool = (chainId: number, poolId: string): PropertyStakingPool => {
   return {
     id: `${chainId}-${poolId}`,
     chainId,
@@ -27,8 +24,8 @@ export const getNewPropertyStakingPool = (
 };
 
 export const getNewTokenDeposit = (
-    stakingPoolPositionId: string,
-    tokenInformationId: string
+  stakingPoolPositionId: string,
+  tokenInformationId: string,
 ): TokenDeposit => {
   return {
     id: `${stakingPoolPositionId}-${tokenInformationId}`,
@@ -42,12 +39,11 @@ export const getNewTokenDeposit = (
   };
 };
 
-
 export const getNewPropertyStakingPoolPosition = (
   chainId: number,
   walletAddress: string,
   poolAddress: string,
-  tokenInformationId: string
+  tokenInformationId: string,
 ): PropertyStakingPoolPosition => {
   return {
     id: `${chainId}-${walletAddress}-${poolAddress}`,
@@ -61,21 +57,17 @@ export const getNewPropertyStakingPoolPosition = (
   };
 };
 
-export const calculatePropertyPoolRatio = (
-  pool: PropertyStakingPool
-): BigDecimal => {
+export const calculatePropertyPoolRatio = (pool: PropertyStakingPool): BigDecimal => {
   if (pool.issuedAmount === 0n) return BigDecimal(1);
 
-  const ratio = BigDecimal(pool.currentAmount.toString()).div(
-    pool.issuedAmount.toString()
-  );
+  const ratio = BigDecimal(pool.currentAmount.toString()).div(pool.issuedAmount.toString());
 
   return ratio;
 };
 
 export const getPropertyStakingPoolRecord = (
   pool: PropertyStakingPool,
-  timestamp: number
+  timestamp: number,
 ): PropertyStakingPoolRecord => {
   const { id: hourId, start: hourStart } = getHour(timestamp);
   const { start: dayStart } = getDay(timestamp);
@@ -95,51 +87,52 @@ export const getPropertyStakingPoolRecord = (
   };
 };
 
-
-export function getValuationAddressForPropertyStakingPool(
-  poolAddress: string
-): string {
+export function getValuationAddressForPropertyStakingPool(poolAddress: string): string {
   const poolAddressFormatted = getAddress(poolAddress);
 
   const propertyStakingPool = getLoadedConfig().propertyStakingContracts.find(
-    (contract) => contract.address === poolAddressFormatted
+    (contract) => contract.address === poolAddressFormatted,
   );
 
   if (!propertyStakingPool) {
-       throw new Error(`Property staking contract not found for staking pool address: ${poolAddressFormatted}`);
+    throw new Error(
+      `Property staking contract not found for staking pool address: ${poolAddressFormatted}`,
+    );
   }
 
   return propertyStakingPool.valuationAddress;
 }
 
-export function getStakingPoolAddressFromValuationAddress(
-  valuationAddress: string
-): string {
+export function getStakingPoolAddressFromValuationAddress(valuationAddress: string): string {
   const valuationAddressFormatted = getAddress(valuationAddress);
 
   const propertyStakingPool = getLoadedConfig().propertyStakingContracts.find(
-    (contract) => contract.valuationAddress === valuationAddressFormatted
+    (contract) => contract.valuationAddress === valuationAddressFormatted,
   );
 
   if (!propertyStakingPool) {
-      throw new Error(`Property staking contract not found for valuation address: ${valuationAddressFormatted}`);
+    throw new Error(
+      `Property staking contract not found for valuation address: ${valuationAddressFormatted}`,
+    );
   }
 
   return propertyStakingPool.address;
 }
 
 export function getStakingPoolTypeFromValuationAddress(
-    valuationAddress: string
+  valuationAddress: string,
 ): PropertyStakingPoolType {
-    const valuationAddressFormatted = getAddress(valuationAddress);
+  const valuationAddressFormatted = getAddress(valuationAddress);
 
-    const propertyStakingPool = getLoadedConfig().propertyStakingContracts.find(
-        (contract) => contract.valuationAddress === valuationAddressFormatted
+  const propertyStakingPool = getLoadedConfig().propertyStakingContracts.find(
+    (contract) => contract.valuationAddress === valuationAddressFormatted,
+  );
+
+  if (!propertyStakingPool) {
+    throw new Error(
+      `Property staking contract not found for valuation address: ${valuationAddressFormatted}`,
     );
+  }
 
-    if (!propertyStakingPool) {
-        throw new Error(`Property staking contract not found for valuation address: ${valuationAddressFormatted}`);
-    }
-
-    return propertyStakingPool.type;
+  return propertyStakingPool.type;
 }

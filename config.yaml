@@ -131,6 +131,19 @@ contracts:
     handler: src/handler/OneInchPostInteraction.ts
     events:
       - event: PostInteractionOrderFilled
+  - name: PropertyTokenOfferingV2
+    abi_file_path: abis/PropertyTokenOfferingV2.json
+    handler: src/handler/PropertyTokenOfferingV2.ts
+    events:
+      - event: MainSaleAdded
+      - event: PresaleAdded
+      - event: Invested
+      - event: PresaleTokensMinted
+      - event: ClaimInvestment
+      - event: MainSaleCanceled
+      - event: PresaleCanceled
+      - event: MainSaleInvestmentsRefunded
+      - event: PresaleInvestmentsRefunded
   # This is used to index mainnet for price feeds
   - name: PriceFeedRegistry
     abi_file_path: ./abis/PriceFeedRegistry.json
@@ -189,6 +202,9 @@ networks:
       - name: PropertyTokenOffering
         address:
           - 0x223aD3AC5Df27F8e062A805A04996F00f1fEAcEb
+      - name: PropertyTokenOfferingV2
+        address:
+          - 0x53A73e55B71e21768474216a723f315f3c53df7B
       - name: PropertyFactory
         address:
           - 0x67b899aF3F27072f15f22Bb33E5f1dF2696CAFcB

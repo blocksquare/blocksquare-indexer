@@ -6,7 +6,7 @@ export const getNewPropertyToken = (
   chainId: number,
   tokenAddress: string,
   certifiedPartnerId: string,
-  certifiedPartnerWalletId: string
+  certifiedPartnerWalletId: string,
 ): PropertyToken => {
   return {
     id: `${chainId}-${tokenAddress}`,
@@ -38,6 +38,7 @@ export const getNewPropertyToken = (
     certifiedPartner_id: certifiedPartnerId,
     certifiedPartnerWallet_id: certifiedPartnerWalletId,
     latestOffering_id: '',
+    offeringV2_id: undefined,
     apy: 0,
     currentYearApy: 0,
     weightedNAVDeviation: 0,
@@ -49,7 +50,7 @@ export const getNewPropertyToken = (
 export const getNewPropertyTokenHolder = (
   chainId: number,
   tokenAddress: string,
-  walletAddress: string
+  walletAddress: string,
 ): PropertyTokenHolder => {
   return {
     id: `${chainId}-${tokenAddress}-${walletAddress}`,
@@ -62,7 +63,7 @@ export const getNewPropertyTokenHolder = (
 
 export const getPropertyTokenRecord = (
   propertyToken: PropertyToken,
-  timestamp: number
+  timestamp: number,
 ): PropertyTokenRecord => {
   const { id: hourId, start: hourStart } = getHour(timestamp);
   const { start: dayStart } = getDay(timestamp);
@@ -86,7 +87,7 @@ export const getPropertyTokenRecord = (
 export const calculateWeightedNAVDeviation = (
   tokenValuation: bigint,
   propertyValuation: bigint,
-  totalSupply: bigint
+  totalSupply: bigint,
 ): number => {
   if (totalSupply === 0n || propertyValuation === 0n || tokenValuation === 0n) {
     return 0;
@@ -95,14 +96,8 @@ export const calculateWeightedNAVDeviation = (
   const DECIMAL_SHIFT = 10000; // For 4 decimal places precision
 
   const weightedValue =
-    tokenValuation * totalSupply +
-    propertyValuation * (MAX_SUPPLY - totalSupply);
+    tokenValuation * totalSupply + propertyValuation * (MAX_SUPPLY - totalSupply);
   const normalizedWeightedNavDeviation =
-    Number(weightedValue / MAX_SUPPLY - propertyValuation) /
-    Number(propertyValuation) /
-    10 ** 18;
-  return (
-    Math.round(normalizedWeightedNavDeviation * 100 * DECIMAL_SHIFT) /
-    DECIMAL_SHIFT
-  ); // Round to 4 decimal places
+    Number(weightedValue / MAX_SUPPLY - propertyValuation) / Number(propertyValuation) / 10 ** 18;
+  return Math.round(normalizedWeightedNavDeviation * 100 * DECIMAL_SHIFT) / DECIMAL_SHIFT; // Round to 4 decimal places
 };

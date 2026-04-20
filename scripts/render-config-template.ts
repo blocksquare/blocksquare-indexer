@@ -15,10 +15,7 @@ if (!process.env.ENVIO_NETWORK) {
   process.exit(1);
 }
 
-if (
-  process.env.ENVIO_NETWORK !== 'mainnet' &&
-  process.env.ENVIO_NETWORK !== 'testnet'
-) {
+if (process.env.ENVIO_NETWORK !== 'mainnet' && process.env.ENVIO_NETWORK !== 'testnet') {
   console.error('Invalid ENVIO_NETWORK environment variable set');
   process.exit(1);
 }
@@ -43,7 +40,7 @@ const configValues: ConfigOverride = {
 
 const configTemplate = fs.readFileSync(
   `./templates/template.${process.env.ENVIO_NETWORK}.config.yaml`,
-  'utf8'
+  'utf8',
 );
 
 const configString = ejs.render(configTemplate, { config: configValues });

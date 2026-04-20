@@ -2,10 +2,7 @@ import { Global, GlobalRecord } from 'generated';
 import { getDay, getHour } from './date';
 import { PropertyToken } from 'generated/src/Types.gen';
 
-export const getGlobalRecord = (
-  global: Global,
-  timestamp: number
-): GlobalRecord => {
+export const getGlobalRecord = (global: Global, timestamp: number): GlobalRecord => {
   const { id: hourId, start: hourStart } = getHour(timestamp);
   const { start: dayStart } = getDay(timestamp);
 
@@ -29,13 +26,13 @@ export const INITIAL_GLOBAL_ENTITY = {
 export const updateGlobalPropertiesCountAndValuation = (
   currentGlobalEntity: Global,
   activeProperties: PropertyToken[],
-  updatedProperty: PropertyToken
+  updatedProperty: PropertyToken,
 ): Global => {
   // Create a copy to avoid mutating the input array
   const updatedActiveProperties = [...activeProperties];
 
   const activePropertyIndex = updatedActiveProperties.findIndex(
-    (property) => property.id === updatedProperty.id
+    (property) => property.id === updatedProperty.id,
   );
 
   // We need to check if we have to add/remove the property
@@ -51,20 +48,19 @@ export const updateGlobalPropertiesCountAndValuation = (
     }
   } else {
     // If found then remove the property from the active properties list.
-    if (activePropertyIndex !== -1)
-      updatedActiveProperties.splice(activePropertyIndex, 1);
+    if (activePropertyIndex !== -1) updatedActiveProperties.splice(activePropertyIndex, 1);
   }
 
   const activePropertiesTotalValuation = updatedActiveProperties.reduce(
     (prev, cur) => prev + cur.propertyValuation,
-    0n
+    0n,
   );
 
   // Count unique countries using Set
   const activePropertiesCountryCount = new Set(
     updatedActiveProperties
-      .map(property => property.countryCode)
-      .filter(countryCode => countryCode && countryCode.length > 0)
+      .map((property) => property.countryCode)
+      .filter((countryCode) => countryCode && countryCode.length > 0),
   ).size;
 
   return {

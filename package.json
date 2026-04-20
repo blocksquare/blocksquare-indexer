@@ -10,7 +10,9 @@
     "dev": "envio dev",
     "test": "pnpm mocha",
     "start": "envio start",
-    "config": "npx dotenvx run -- ts-node ./scripts/render-config-template.ts"
+    "config": "npx dotenvx run --convention nextjs -- ts-node ./scripts/render-config-template.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.51.1",
@@ -23,6 +25,7 @@
     "envio": "2.32.2",
     "ethers": "6.15.0",
     "mocha": "11.7.5",
+    "prettier": "^3.8.1",
     "ts-mocha": "^11.1.0",
     "ts-node": "10.9.2",
     "typescript": "5.9.3"

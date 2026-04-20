@@ -6,7 +6,7 @@ import { PropertyTokenOffering as PropertyTokenOfferingType } from 'generated/sr
 PropertyTokenOffering.InitialOffer.handler(async ({ event, context }) => {
   const property = await context.PropertyToken.getOrThrow(
     `${event.chainId}-${event.params.property}`,
-    'PropertyTokenOffering.InitialOffer: Property not found'
+    'PropertyTokenOffering.InitialOffer: Property not found',
   );
 
   const newPropertyTokenOffering: PropertyTokenOfferingType = {
@@ -38,30 +38,28 @@ PropertyTokenOffering.InitialOffer.handler(async ({ event, context }) => {
   });
 });
 
-PropertyTokenOffering.InitialOfferingCanceled.handler(
-  async ({ event, context }) => {
-    const property = await context.PropertyToken.getOrThrow(
-      `${event.chainId}-${event.params.property}`,
-      'PropertyTokenOffering.InitialOfferingCanceled: Property not found'
-    );
+PropertyTokenOffering.InitialOfferingCanceled.handler(async ({ event, context }) => {
+  const property = await context.PropertyToken.getOrThrow(
+    `${event.chainId}-${event.params.property}`,
+    'PropertyTokenOffering.InitialOfferingCanceled: Property not found',
+  );
 
-    //Get active offering
-    const activeOffering = await context.PropertyTokenOffering.getOrThrow(
-      property.latestOffering_id,
-      'PropertyTokenOffering.InitialOfferingCanceled: Offering not found'
-    );
+  //Get active offering
+  const activeOffering = await context.PropertyTokenOffering.getOrThrow(
+    property.latestOffering_id,
+    'PropertyTokenOffering.InitialOfferingCanceled: Offering not found',
+  );
 
-    context.PropertyTokenOffering.set({
-      ...activeOffering,
-      status: 'canceled',
-    });
-  }
-);
+  context.PropertyTokenOffering.set({
+    ...activeOffering,
+    status: 'canceled',
+  });
+});
 
 PropertyTokenOffering.Invested.handler(async ({ event, context }) => {
   const wallet = await context.Wallet.getOrThrow(
     `${event.chainId}-${event.params.wallet}`,
-    'PropertyTokenOffering.Invested: Wallet not found'
+    'PropertyTokenOffering.Invested: Wallet not found',
   );
 
   const propertyInvestment: PropertyTokenInvestment = {
@@ -83,12 +81,12 @@ PropertyTokenOffering.ClaimInvestment.handler(async ({ event, context }) => {
   //property, collected, fee
   const property = await context.PropertyToken.getOrThrow(
     `${event.chainId}-${event.params.property}`,
-    'PropertyTokenOffering.ClaimInvestment: Property not found'
+    'PropertyTokenOffering.ClaimInvestment: Property not found',
   );
 
   const propertyTokenOffering = await context.PropertyTokenOffering.getOrThrow(
     property.latestOffering_id,
-    'PropertyTokenOffering.ClaimInvestment: Offering not found'
+    'PropertyTokenOffering.ClaimInvestment: Offering not found',
   );
 
   context.PropertyTokenOffering.set({
@@ -97,35 +95,32 @@ PropertyTokenOffering.ClaimInvestment.handler(async ({ event, context }) => {
   });
 });
 
-PropertyTokenOffering.ReturnedPresaleInvestment.handler(
-  async ({ event, context }) => {
-    const property = await context.PropertyToken.getOrThrow(
-      `${event.chainId}-${event.params.property}`,
-      'PropertyTokenOffering.ReturnedPresaleInvestment: property not found'
-    );
-
-    const propertyTokenOffering =
-      await context.PropertyTokenOffering.getOrThrow(
-        property.latestOffering_id,
-        'PropertyTokenOffering.ReturnedPresaleInvestment: Offering not found'
-      );
-
-    context.PropertyTokenOffering.set({
-      ...propertyTokenOffering,
-      status: 'failed',
-    });
-  }
-);
-
-PropertyTokenOffering.ReturnedInvestment.handler(async ({ event, context }) => {
+PropertyTokenOffering.ReturnedPresaleInvestment.handler(async ({ event, context }) => {
   const property = await context.PropertyToken.getOrThrow(
     `${event.chainId}-${event.params.property}`,
-    'PropertyTokenOffering.ReturnedInvestment: property not found'
+    'PropertyTokenOffering.ReturnedPresaleInvestment: property not found',
   );
 
   const propertyTokenOffering = await context.PropertyTokenOffering.getOrThrow(
     property.latestOffering_id,
-    'PropertyTokenOffering.ReturnedInvestment: Offering not found'
+    'PropertyTokenOffering.ReturnedPresaleInvestment: Offering not found',
+  );
+
+  context.PropertyTokenOffering.set({
+    ...propertyTokenOffering,
+    status: 'failed',
+  });
+});
+
+PropertyTokenOffering.ReturnedInvestment.handler(async ({ event, context }) => {
+  const property = await context.PropertyToken.getOrThrow(
+    `${event.chainId}-${event.params.property}`,
+    'PropertyTokenOffering.ReturnedInvestment: property not found',
+  );
+
+  const propertyTokenOffering = await context.PropertyTokenOffering.getOrThrow(
+    property.latestOffering_id,
+    'PropertyTokenOffering.ReturnedInvestment: Offering not found',
   );
 
   context.PropertyTokenOffering.set({

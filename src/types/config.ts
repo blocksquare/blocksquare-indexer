@@ -1,5 +1,5 @@
-import { Dayjs } from "dayjs";
-import { PropertyStakingPoolType } from "./enums";
+import { Dayjs } from 'dayjs';
+import { PropertyStakingPoolType } from './enums';
 
 export type Config = {
   chainId: number;
@@ -25,6 +25,7 @@ export type Config = {
     address: string;
   }>;
   propertyTokenOfferingAddress: string;
+  propertyTokenOfferingV2Address: string;
   uniswapWethDaiPoolAddress: string;
   usersRegistryAddress: string;
   zeroExAddress: string;

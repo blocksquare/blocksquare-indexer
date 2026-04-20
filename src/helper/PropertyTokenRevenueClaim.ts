@@ -8,7 +8,7 @@ export const getNewPropertyTokenRevenueClaim = (
   logIndex: number,
   propertyTokenId: string,
   walletId: string,
-  amount: bigint
+  amount: bigint,
 ): PropertyTokenRevenueClaim => {
   return {
     id: `${chainId}-${transactionHash}-${logIndex}`,
@@ -21,4 +21,3 @@ export const getNewPropertyTokenRevenueClaim = (
     amount,
   };
 };
-
