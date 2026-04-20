@@ -124,6 +124,11 @@ contracts:
     handler: src/handler/ZeroEx.ts
     events:
       - event: LimitOrderFilled
+  - name: OneInchPostInteraction
+    abi_file_path: abis/OneInchPostInteraction.json
+    handler: src/handler/OneInchPostInteraction.ts
+    events:
+      - event: PostInteractionOrderFilled
   # This is used to index mainnet for price feeds
   - name: PriceFeedRegistry
     abi_file_path: ./abis/PriceFeedRegistry.json
@@ -200,6 +205,9 @@ networks:
         address:
           - <%= config.zeroExAddress %>
         start_block: <%= config.zeroExStartBlock %>
+      - name: OneInchPostInteraction
+        address:
+          - <%= config.oneInchPostInteractionAddress %>
       - name: UniswapPoolV2
         address: [<%= config.jointUniswapPoolContracts %>]
 

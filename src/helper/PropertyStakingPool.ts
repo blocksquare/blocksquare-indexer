@@ -10,6 +10,7 @@ import {
 import { getDay, getHour } from './date';
 import { getLoadedConfig } from '../config';
 import { PropertyStakingPool } from 'generated/src/Types.gen';
+import { PropertyStakingPoolType } from '../types/enums';
 export const getNewPropertyStakingPool = (
   chainId: number,
   poolId: string
@@ -170,13 +171,15 @@ export function getValuationAddressForPropertyStakingPool(
 ): string {
   const poolAddressFormatted = getAddress(poolAddress);
 
-  const valuationAddress = getLoadedConfig().propertyStakingContracts.find(
+  const propertyStakingPool = getLoadedConfig().propertyStakingContracts.find(
     (contract) => contract.address === poolAddressFormatted
-  )?.valuationAddress;
+  );
 
-  if (!valuationAddress) throw new Error('Valuation address not found');
+  if (!propertyStakingPool) {
+       throw new Error(`Property staking contract not found for staking pool address: ${poolAddressFormatted}`);
+  }
 
-  return valuationAddress;
+  return propertyStakingPool.valuationAddress;
 }
 
 export function getStakingPoolAddressFromValuationAddress(
@@ -184,11 +187,29 @@ export function getStakingPoolAddressFromValuationAddress(
 ): string {
   const valuationAddressFormatted = getAddress(valuationAddress);
 
-  const stakingPoolAddress = getLoadedConfig().propertyStakingContracts.find(
+  const propertyStakingPool = getLoadedConfig().propertyStakingContracts.find(
     (contract) => contract.valuationAddress === valuationAddressFormatted
-  )?.address;
+  );
 
-  if (!stakingPoolAddress) throw new Error('Staking pool address not found');
+  if (!propertyStakingPool) {
+      throw new Error(`Property staking contract not found for valuation address: ${valuationAddressFormatted}`);
+  }
 
-  return stakingPoolAddress;
+  return propertyStakingPool.address;
+}
+
+export function getStakingPoolTypeFromValuationAddress(
+    valuationAddress: string
+): PropertyStakingPoolType {
+    const valuationAddressFormatted = getAddress(valuationAddress);
+
+    const propertyStakingPool = getLoadedConfig().propertyStakingContracts.find(
+        (contract) => contract.valuationAddress === valuationAddressFormatted
+    );
+
+    if (!propertyStakingPool) {
+        throw new Error(`Property staking contract not found for valuation address: ${valuationAddressFormatted}`);
+    }
+
+    return propertyStakingPool.type;
 }

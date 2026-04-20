@@ -126,6 +126,11 @@ contracts:
     handler: src/handler/ZeroEx.ts
     events:
       - event: LimitOrderFilled
+  - name: OneInchPostInteraction
+    abi_file_path: abis/OneInchPostInteraction.json
+    handler: src/handler/OneInchPostInteraction.ts
+    events:
+      - event: PostInteractionOrderFilled
   # This is used to index mainnet for price feeds
   - name: PriceFeedRegistry
     abi_file_path: ./abis/PriceFeedRegistry.json
@@ -179,7 +184,7 @@ networks:
           - 0x3a0AD3e022e9CC53a75EA8C4907B6E326a615504
       - name: MarketplacePool
       - name: OceanpointValuation
-        address: [0xd88f8CB694fB5684DEDFb68C946749D1FAE64d83,0x15389b98C8050562a6B0Ec6684DFD39F961d0DE9,0x00e63d90b0481c8AC9abE68d03ec40B2d3e87E45]
+        address: [0x00e63d90b0481c8AC9abE68d03ec40B2d3e87E45,0xd88f8CB694fB5684DEDFb68C946749D1FAE64d83,0x15389b98C8050562a6B0Ec6684DFD39F961d0DE9]
       - name: PropertyToken
       - name: PropertyTokenOffering
         address:
@@ -194,7 +199,7 @@ networks:
         address:
           - 0xbc9bf93d96096F42364DBD2c2b32a317fd06C8cB
       - name: PropertyStakingPool
-        address: [0x00C92C11dB2E4229291398000132c3Cfdd4Daac1,0xEA819503da30628F862e1D9F5944aD5d3e347A96,0x9CaE63f8e6b931D269A449A937F742a5d1B3A4A9]
+        address: [0x9CaE63f8e6b931D269A449A937F742a5d1B3A4A9,0x00C92C11dB2E4229291398000132c3Cfdd4Daac1,0xEA819503da30628F862e1D9F5944aD5d3e347A96]
       - name: Users
         address:
           - 0xCd0c1845552DD0b2EFCBa0cF0ECd341A0B99d49a
@@ -202,6 +207,9 @@ networks:
         address:
           - 0xDef1C0ded9bec7F1a1670819833240f027b25EfF
         start_block: 0
+      - name: OneInchPostInteraction
+        address:
+          - 0xC8B2029bF486c62d2086D767bA1C23b9485da29E
       - name: UniswapPoolV2
         address: [0xc026cBA28A7f94C8Bc16547e979295191b2FD671,0x0E85fB1be698E777F2185350b4A52E5eE8DF51A6]
 

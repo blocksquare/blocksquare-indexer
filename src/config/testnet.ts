@@ -1,5 +1,6 @@
 import { getAddress } from 'ethers';
 import { Config } from '../types/config';
+import {PropertyStakingPoolType} from "../types/enums";
 
 export const testnetConfig: Config = {
   chainId: 11155111, // Sepolia
@@ -35,25 +36,30 @@ export const testnetConfig: Config = {
     '0xbc9bf93d96096F42364DBD2c2b32a317fd06C8cB'
   ),
   propertyStakingContracts: [
-    // Owner Staking Pool
+      // Community Staking Pool
+    {
+       address: getAddress('0x9CaE63f8e6b931D269A449A937F742a5d1B3A4A9'),
+       valuationAddress: getAddress(
+           '0x00e63d90b0481c8AC9abE68d03ec40B2d3e87E45'
+       ),
+       type: PropertyStakingPoolType.COMMUNITY,
+    },
+    // Issuer Staking Pool
     {
       address: getAddress('0x00c92c11db2e4229291398000132c3cfdd4daac1'),
       valuationAddress: getAddress(
         '0xd88f8cb694fb5684dedfb68c946749d1fae64d83'
       ),
+      type: PropertyStakingPoolType.ISSUER,
     },
+
     // CryptoSnacks Staking Pool
     {
       address: getAddress('0xea819503da30628f862e1d9f5944ad5d3e347a96'),
       valuationAddress: getAddress(
         '0x15389b98c8050562a6b0ec6684dfd39f961d0de9'
       ),
-    },
-    {
-      address: getAddress('0x9CaE63f8e6b931D269A449A937F742a5d1B3A4A9'),
-      valuationAddress: getAddress(
-        '0x00e63d90b0481c8AC9abE68d03ec40B2d3e87E45'
-      ),
+      type: PropertyStakingPoolType.RWA,
     },
   ],
   propertyTokenOfferingAddress: getAddress(
@@ -77,4 +83,5 @@ export const testnetConfig: Config = {
   ),
   zeroExAddress: getAddress('0xdef1c0ded9bec7f1a1670819833240f027b25eff'),
   zeroExStartBlock: 0,
+  oneInchPostInteractionAddress: getAddress('0xC8B2029bF486c62d2086D767bA1C23b9485da29E')
 };

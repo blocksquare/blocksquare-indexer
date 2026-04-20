@@ -1,6 +1,7 @@
 import { PropertyRevenueDistribution } from 'generated';
 import { getNewPropertyTokenRevenue } from '../helper/PropertyTokenRevenue';
 import { getNewPropertyTokenRevenueDistribution } from '../helper/PropertyTokenRevenueDistribution';
+import { getNewPropertyTokenRevenueClaim } from '../helper/PropertyTokenRevenueClaim';
 import { getAPY } from '../helper/APYCalculation';
 
 PropertyRevenueDistribution.RevenueAdded.handler(async ({ event, context }) => {
@@ -27,14 +28,18 @@ PropertyRevenueDistribution.RevenueAdded.handler(async ({ event, context }) => {
   }, {} as { [key: string]: any });
 
 
-    for  (const [index, user] of event.params.users.entries()) {
-        const propertyTokenRevenue = propertyTokenRevenuesLoaded[user];
+    // There can be multiple entries for the same user. We need to aggregate all the amounts for the same user.
+    const aggregatedPendingRevenues = event.params.users.reduce<Record<string, bigint>>((acc, user, index) => {
+        acc[user] = (acc[user] ?? 0n) + event.params.amounts[index];
+        return acc;
+    }, {});
 
+    for (const [user, totalPendingRevenue] of Object.entries(aggregatedPendingRevenues)) {
+        const propertyTokenRevenue = propertyTokenRevenuesLoaded[user];
         context.PropertyTokenRevenue.set({
           ...propertyTokenRevenue,
-          pendingRevenue:
-              propertyTokenRevenue.pendingRevenue + event.params.amounts[index],
-          });
+          pendingRevenue: propertyTokenRevenue.pendingRevenue + totalPendingRevenue,
+        });
     }
 
       const currentPropertyTokenRevenueDistribution =
@@ -81,4 +86,21 @@ PropertyRevenueDistribution.RevenueClaimed.handler(async ({ event, context }) =>
       pendingRevenue: propertyTokenRevenue.pendingRevenue - event.params.amount,
       claimedRevenue: propertyTokenRevenue.claimedRevenue + event.params.amount,
     });
+
+    // Create revenue claim record
+    const propertyTokenId = `${event.chainId}-${event.params.property}`;
+    const walletId = `${event.chainId}-${event.params.user}`;
+
+    const revenueClaim = getNewPropertyTokenRevenueClaim(
+      event.chainId,
+      event.transaction.hash,
+      event.block.number,
+      event.block.timestamp,
+      event.logIndex,
+      propertyTokenId,
+      walletId,
+      event.params.amount
+    );
+
+    context.PropertyTokenRevenueClaim.set(revenueClaim);
 });

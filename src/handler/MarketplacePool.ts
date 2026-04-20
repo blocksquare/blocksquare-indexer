@@ -236,6 +236,8 @@ MarketplacePool.LiquidateCPCollateral.handler(async ({ event, context }) => {
       cpAmount: 0n,
       totalWithdrawAmount:
         marketplacePool.totalWithdrawAmount + event.params.amount,
+      isCpCollateralLiquidated: true,
+      cpCollateralLiquidatedAt: event.block.timestamp,
     };
     context.MarketplacePool.set(marketplacePoolUpdated);
     context.MarketplacePoolRecord.set(

@@ -98,6 +98,8 @@ export const getNewMarketplacePool = (
     totalRewardsClaimed: 0n,
     vAmount: 0n,
     certifiedPartnerPoolPosition_id: '',
+    isCpCollateralLiquidated: false,
+    cpCollateralLiquidatedAt: 0,
   };
 };
 

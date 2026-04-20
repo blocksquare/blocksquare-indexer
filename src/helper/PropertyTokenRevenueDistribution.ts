@@ -19,6 +19,7 @@ export const getNewPropertyTokenRevenueDistribution = (
 
     return {
         id: `${propertyToken.id}-${blockTimestamp}`,
+        blockTimestamp: blockTimestamp,
         chainId,
         users: users,
         amounts:amounts,

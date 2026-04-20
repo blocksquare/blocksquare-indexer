@@ -1,6 +1,9 @@
 import { OceanpointValuation } from 'generated';
 import { getNewOceanpointTokenInformation } from '../helper/OceanpointTokenValuation';
-import { getStakingPoolAddressFromValuationAddress } from '../helper/PropertyStakingPool';
+import {
+    getStakingPoolAddressFromValuationAddress,
+    getStakingPoolTypeFromValuationAddress
+} from '../helper/PropertyStakingPool';
 import {BIGINT_100K} from "../helper/constants";
 
 OceanpointValuation.ValuationUpdate.handler(async ({ event, context }) => {
@@ -8,12 +11,17 @@ OceanpointValuation.ValuationUpdate.handler(async ({ event, context }) => {
     event.srcAddress
   );
 
+  const stakingPoolType = getStakingPoolTypeFromValuationAddress(
+      event.srcAddress
+   );
+
   const valuation = await context.OceanpointTokenInformation.getOrCreate(
     getNewOceanpointTokenInformation(
       event.chainId,
       event.params.property,
       event.srcAddress,
-      stakingPoolAdddress
+      stakingPoolAdddress,
+      stakingPoolType
     )
   );
 
@@ -24,6 +32,7 @@ OceanpointValuation.ValuationUpdate.handler(async ({ event, context }) => {
     valuation: event.params.newValuation,
     valuationFrom: event.srcAddress,
     valuePerBSPT,
+    propertyStakingPoolType: stakingPoolType,
   });
 });
 
@@ -32,17 +41,23 @@ OceanpointValuation.APYUpdate.handler(async ({ event, context }) => {
     event.srcAddress
   );
 
+  const stakingPoolType = getStakingPoolTypeFromValuationAddress(
+      event.srcAddress
+  );
+
   const valuation = await context.OceanpointTokenInformation.getOrCreate(
     getNewOceanpointTokenInformation(
       event.chainId,
       event.params.property,
       event.srcAddress,
-      stakingPoolAdddress
+      stakingPoolAdddress,
+      stakingPoolType
     )
   );
 
   context.OceanpointTokenInformation.set({
     ...valuation,
     apy: event.params.newAPY,
+    propertyStakingPoolType: stakingPoolType,
   });
 });
