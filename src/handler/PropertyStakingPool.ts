@@ -220,11 +220,6 @@ PropertyStakingPool.Reward.handler(async ({ event, context }) => {
     context.Wallet.set(getNewWallet(event.chainId, event.params.from));
   }
 
-  context.PropertyStakingPool.set(newStakingPoolData);
-  context.PropertyStakingPoolRecord.set(
-    getPropertyStakingPoolRecord(newStakingPoolData, event.block.timestamp),
-  );
-
   context.PropertyStakingPoolTransaction.set({
     id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
     chainId: event.chainId,

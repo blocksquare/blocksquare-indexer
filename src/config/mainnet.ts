@@ -44,7 +44,7 @@ export const mainnetConfig: Config = {
     },
   ],
   propertyTokenOfferingAddress: getAddress('0x25862c4fb4ce9d6ff9b463488e0ec656fa08de78'),
-  propertyTokenOfferingV2Address: '',
+  propertyTokenOfferingV2Address: null,
   uniswapPoolContracts: [
     {
       assetPairId: 'BST/ETH',
