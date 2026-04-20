@@ -21,6 +21,26 @@ enum LimitOrderProtocol {
     OneInch
 }
 
+enum StakingPoolTransactionType {
+  DEPOSIT
+  WITHDRAW
+  REWARD
+}
+
+enum PropertyStakingPoolTransactionType {
+  DEPOSIT
+  WITHDRAW
+  REWARD
+}
+
+enum MarketplacePoolTransactionType {
+  CP_INITIALIZED
+  DEPOSIT
+  WITHDRAW
+  REWARD
+  LIQUIDATE_CP_COLLATERAL
+}
+
 ### Price Tracking ###
 
 type AssetPairPrice @entity {
@@ -304,12 +324,6 @@ type Wallet {
 
 ### Oceanpoint ###
 
-enum StakingPoolTransactionType {
-  DEPOSIT
-  WITHDRAW
-  REWARD
-}
-
 type StakingPoolTransaction {
   id: ID!
   chainId: Int!
@@ -360,12 +374,6 @@ type OceanpointTokenInformation {
   valuationFrom: Bytes!
   valuePerBSPT: BigInt!
   apy: BigInt!
-}
-
-enum PropertyStakingPoolTransactionType {
-  DEPOSIT
-  WITHDRAW
-  REWARD
 }
 
 type PropertyStakingPoolTransaction {
@@ -425,14 +433,6 @@ type PropertyStakingPoolPosition {
 type Reward {
   id: ID!
   chainId: Int!
-}
-
-enum MarketplacePoolTransactionType {
-  CP_INITIALIZED
-  DEPOSIT
-  WITHDRAW
-  REWARD
-  LIQUIDATE_CP_COLLATERAL
 }
 
 type MarketplacePoolTransaction {
