@@ -56,5 +56,5 @@ export const testnetConfig: Config = {
   usersRegistryAddress: getAddress('0xcd0c1845552dd0b2efcba0cf0ecd341a0b99d49a'),
   zeroExAddress: getAddress('0xdef1c0ded9bec7f1a1670819833240f027b25eff'),
   zeroExStartBlock: 0,
-  oneInchPostInteractionAddress: getAddress('0xC8B2029bF486c62d2086D767bA1C23b9485da29E'),
+  oneInchPostInteractionAddress: getAddress('0xf578feD7b233fca3D227cE9e9A0f60073eE07170'),
 };
