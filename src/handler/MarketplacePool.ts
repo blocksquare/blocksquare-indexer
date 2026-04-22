@@ -76,11 +76,6 @@ MarketplacePool.Deposit.handler(async ({ event, context }) => {
     stakedAmount: finalMarketplacePoolPosition.stakedAmount + event.params.inAmount,
     vAmount: finalMarketplacePoolPosition.vAmount + event.params.outAmount,
   });
-  context.MarketplacePoolPosition.set({
-    ...finalMarketplacePoolPosition,
-    stakedAmount: finalMarketplacePoolPosition.stakedAmount + event.params.inAmount,
-    vAmount: finalMarketplacePoolPosition.vAmount + event.params.outAmount,
-  });
 
   context.MarketplacePoolTransaction.set({
     id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
@@ -121,12 +116,6 @@ MarketplacePool.Withdraw.handler(async ({ event, context }) => {
     getMarketplacePoolRecord(marketplacePoolUpdated, event.block.timestamp),
   );
 
-  context.MarketplacePoolPosition.set({
-    ...marketplacePoolPosition,
-    stakedAmount: marketplacePoolPosition.stakedAmount - event.params.outAmount,
-    vAmount: marketplacePoolPosition.vAmount - event.params.inAmount,
-    rewards: marketplacePoolPosition.rewards + event.params.reward,
-  });
   context.MarketplacePoolPosition.set({
     ...marketplacePoolPosition,
     stakedAmount: marketplacePoolPosition.stakedAmount - event.params.outAmount,
@@ -194,11 +183,6 @@ MarketplacePool.Reward.handler(async ({ event, context }) => {
   if (!rewardWallet) {
     context.Wallet.set(getNewWallet(event.chainId, event.params.from));
   }
-
-  context.MarketplacePool.set(marketplacePoolUpdated);
-  context.MarketplacePoolRecord.set(
-    getMarketplacePoolRecord(marketplacePoolUpdated, event.block.timestamp),
-  );
 
   context.MarketplacePoolTransaction.set({
     id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
