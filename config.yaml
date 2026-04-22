@@ -225,7 +225,7 @@ networks:
         start_block: 0
       - name: OneInchPostInteraction
         address:
-          - 0xC8B2029bF486c62d2086D767bA1C23b9485da29E
+          - 0xf578feD7b233fca3D227cE9e9A0f60073eE07170
       - name: UniswapPoolV2
         address: [0xc026cBA28A7f94C8Bc16547e979295191b2FD671,0x0E85fB1be698E777F2185350b4A52E5eE8DF51A6]
 
