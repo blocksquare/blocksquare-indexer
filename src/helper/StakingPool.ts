@@ -13,7 +13,7 @@ import {
   handlerContext,
 } from 'generated';
 
-import { getNewWallet } from './Wallet';
+import {ensureWallet, getNewWallet} from './Wallet';
 import { TWO_DAYS_IN_SECONDS } from './constants';
 import { getDay, getHour } from './date';
 import { StakingPoolTransactionType } from '../types/enums';
@@ -156,11 +156,7 @@ export const StakingRewardHandler = async (
     ratio: calculatePoolRatio(stakingPool),
   };
 
-  const rewardWalletId = `${event.chainId}-${event.params.from}`;
-  const rewardWallet = await context.Wallet.get(rewardWalletId);
-  if (!rewardWallet) {
-    context.Wallet.set(getNewWallet(event.chainId, event.params.from));
-  }
+  const rewardWalletId = await ensureWallet(context, event.chainId, event.params.from);
 
   context.StakingPool.set(newStakingPoolData);
   context.StakingPoolRecord.set(getStakingPoolRecord(newStakingPoolData, event.block.timestamp));

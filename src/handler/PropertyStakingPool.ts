@@ -7,7 +7,7 @@ import {
   getPropertyStakingPoolRecord,
   getValuationAddressForPropertyStakingPool,
 } from '../helper/PropertyStakingPool';
-import { getNewWallet } from '../helper/Wallet';
+import {ensureWallet, getNewWallet} from '../helper/Wallet';
 import { BIGINT_100K, WEI_DECIMALS } from '../helper/constants';
 import { PropertyStakingPoolTransactionType } from '../types/enums';
 
@@ -214,11 +214,8 @@ PropertyStakingPool.Reward.handler(async ({ event, context }) => {
   context.PropertyStakingPoolRecord.set(
     getPropertyStakingPoolRecord(newStakingPoolData, event.block.timestamp),
   );
-  const rewardWalletId = `${event.chainId}-${event.params.from}`;
-  const rewardWallet = await context.Wallet.get(rewardWalletId);
-  if (!rewardWallet) {
-    context.Wallet.set(getNewWallet(event.chainId, event.params.from));
-  }
+
+  const rewardWalletId = await ensureWallet(context, event.chainId, event.params.from);
 
   context.PropertyStakingPoolTransaction.set({
     id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,

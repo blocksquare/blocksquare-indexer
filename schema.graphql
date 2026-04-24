@@ -34,11 +34,9 @@ enum PropertyStakingPoolTransactionType {
 }
 
 enum MarketplacePoolTransactionType {
-  CP_INITIALIZED
   DEPOSIT
   WITHDRAW
   REWARD
-  LIQUIDATE_CP_COLLATERAL
 }
 
 ### Price Tracking ###
@@ -438,7 +436,7 @@ type MarketplacePoolTransaction {
   transactionHash: Bytes!
   blockNumber: Int!
   blockTimestamp: Int!
-  wallet: Wallet
+  wallet: Wallet!
   amount: BigInt!
   issuedAmount: BigInt
   reward: BigInt

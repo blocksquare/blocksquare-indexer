@@ -1,6 +1,6 @@
 import { MarketplacePool } from 'generated';
 import { getMarketplacePoolRecord, getNewMarketplacePoolPosition } from '../helper/MarketplacePool';
-import { getNewWallet } from '../helper/Wallet';
+import {ensureWallet, getNewWallet} from '../helper/Wallet';
 import { MarketplacePoolTransactionType } from '../types/enums';
 
 MarketplacePool.CPInitialized.handler(async ({ event, context }) => {
@@ -178,11 +178,8 @@ MarketplacePool.Reward.handler(async ({ event, context }) => {
   context.MarketplacePoolRecord.set(
     getMarketplacePoolRecord(marketplacePoolUpdated, event.block.timestamp),
   );
-  const rewardWalletId = `${event.chainId}-${event.params.from}`;
-  const rewardWallet = await context.Wallet.get(rewardWalletId);
-  if (!rewardWallet) {
-    context.Wallet.set(getNewWallet(event.chainId, event.params.from));
-  }
+
+  const rewardWalletId = await ensureWallet(context, event.chainId, event.params.from);
 
   context.MarketplacePoolTransaction.set({
     id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
