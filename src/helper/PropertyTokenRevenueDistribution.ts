@@ -6,6 +6,7 @@ export const getNewPropertyTokenRevenueDistribution = (
   propertyToken: PropertyToken,
   chainId: number,
   blockTimestamp: number,
+  contractAddress: string,
   users: string[],
   amounts: bigint[],
   fromTime: bigint,
@@ -20,9 +21,10 @@ export const getNewPropertyTokenRevenueDistribution = (
   );
 
   return {
-    id: `${propertyToken.id}-${blockTimestamp}`,
+    id: `${propertyToken.id}-${contractAddress}-${blockTimestamp}`,
     blockTimestamp: blockTimestamp,
     chainId,
+    contractAddress,
     users: users,
     amounts: amounts,
     totalAmount: amounts.reduce((a, b) => a + b, 0n),

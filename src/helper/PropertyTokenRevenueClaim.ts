@@ -2,6 +2,7 @@ import { PropertyTokenRevenueClaim } from 'generated';
 
 export const getNewPropertyTokenRevenueClaim = (
   chainId: number,
+  contractAddress: string,
   transactionHash: string,
   blockNumber: number,
   blockTimestamp: number,
@@ -13,6 +14,7 @@ export const getNewPropertyTokenRevenueClaim = (
   return {
     id: `${chainId}-${transactionHash}-${logIndex}`,
     chainId,
+    contractAddress,
     transactionHash,
     blockNumber,
     blockTimestamp,

@@ -22,7 +22,7 @@ PropertyRevenueDistribution.RevenueAdded.handler(async ({ event, context }) => {
       return {
         user,
         revenue: await context.PropertyTokenRevenue.getOrCreate(
-          getNewPropertyTokenRevenue(propertyTokenLoaded, user),
+          getNewPropertyTokenRevenue(propertyTokenLoaded, user, event.srcAddress),
         ),
       };
     }),
@@ -57,6 +57,7 @@ PropertyRevenueDistribution.RevenueAdded.handler(async ({ event, context }) => {
     propertyTokenLoaded,
     event.chainId,
     event.block.timestamp,
+    event.srcAddress,
     event.params.users,
     event.params.amounts,
     event.params.fromTime,
@@ -85,7 +86,7 @@ PropertyRevenueDistribution.RevenueClaimed.handler(async ({ event, context }) =>
   if (event.params.amount === 0n) return;
 
   const propertyTokenRevenue = await context.PropertyTokenRevenue.getOrThrow(
-    `${event.chainId}-${event.params.property}-${event.params.user}`,
+    `${event.chainId}-${event.params.property}-${event.srcAddress}-${event.params.user}`,
     'PropertyRevenueDistribution.RevenueClaimed.handler: PropertyTokenRevenue not found',
   );
 
@@ -101,6 +102,7 @@ PropertyRevenueDistribution.RevenueClaimed.handler(async ({ event, context }) =>
 
   const revenueClaim = getNewPropertyTokenRevenueClaim(
     event.chainId,
+    event.srcAddress,
     event.transaction.hash,
     event.block.number,
     event.block.timestamp,
