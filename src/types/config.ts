@@ -15,6 +15,7 @@ export type Config = {
   propertyFactoryAddress: string;
   propertyRegistryAddress: string;
   propertyRevenueDistributionAddress: string;
+  legacyPropertyRevenueDistributionAddress?: string;
   propertyStakingContracts: Array<{
     address: string;
     valuationAddress: string;

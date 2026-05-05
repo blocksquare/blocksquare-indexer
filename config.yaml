@@ -213,6 +213,7 @@ networks:
           - 0x0be43Cfd32a91cC277489b547598b6428ef9A584
       - name: PropertyRevenueDistribution
         address:
+          - 0x1e5aA46E7AB0369a1f047A345A44164F6562Bb4C
           - 0xbc9bf93d96096F42364DBD2c2b32a317fd06C8cB
       - name: PropertyStakingPool
         address: [0x9CaE63f8e6b931D269A449A937F742a5d1B3A4A9,0x00C92C11dB2E4229291398000132c3Cfdd4Daac1,0xEA819503da30628F862e1D9F5944aD5d3e347A96]

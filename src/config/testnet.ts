@@ -18,7 +18,8 @@ export const testnetConfig: Config = {
   marketPlacePoolFactoryAddress: getAddress('0x3a0ad3e022e9cc53a75ea8c4907b6e326a615504'),
   propertyFactoryAddress: getAddress('0x67b899af3f27072f15f22bb33e5f1df2696cafcb'),
   propertyRegistryAddress: getAddress('0x0be43cfd32a91cc277489b547598b6428ef9a584'),
-  propertyRevenueDistributionAddress: getAddress('0xbc9bf93d96096F42364DBD2c2b32a317fd06C8cB'),
+  propertyRevenueDistributionAddress: getAddress('0x1e5aA46E7AB0369a1f047A345A44164F6562Bb4C'),
+  legacyPropertyRevenueDistributionAddress: getAddress('0xbc9bf93d96096F42364DBD2c2b32a317fd06C8cB'),
   propertyStakingContracts: [
     // Community Staking Pool
     {
