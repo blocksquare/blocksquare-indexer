@@ -167,6 +167,12 @@ networks:
       - name: PropertyTokenOffering
         address:
           - <%= config.propertyTokenOfferingAddress %>
+      <% if (config.propertyTokenOfferingV2Address) { %>
+      - name: PropertyTokenOfferingV2
+        address:
+          - <%= config.propertyTokenOfferingV2Address %>
+      <% } %>
+
       - name: PropertyFactory
         address:
           - <%= config.propertyFactoryAddress %>
