@@ -1,6 +1,6 @@
 import { PropertyRegistry } from 'generated';
 import { iso1A2Code } from '@rapideditor/country-coder';
-import { getPropertyTokenRecord, calculateWeightedNAVDeviation } from '../helper/PropertyToken';
+import { getPropertyTokenRecord, calculateWeightedNAVDeviation, MOCK_PROPERTY_ADDRESS } from '../helper/PropertyToken';
 import {
   getGlobalRecord,
   INITIAL_GLOBAL_ENTITY,
@@ -120,6 +120,9 @@ PropertyRegistry.PropertyInfoChanged.handler(async ({ event, context }) => {
 });
 
 PropertyRegistry.PropertyValuationChange.handler(async ({ event, context }) => {
+  // Skip handling mock property token. Temporary fix until v2 contracts are deployed.
+  if (event.params.property === MOCK_PROPERTY_ADDRESS) return;
+
   const [activeProperties, global, propertyTokenLoaded] = await Promise.all([
     context.PropertyToken.getWhere.propertyValuation.gt(0n),
     context.Global.getOrCreate(INITIAL_GLOBAL_ENTITY),

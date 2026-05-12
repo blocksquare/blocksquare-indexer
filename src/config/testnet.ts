@@ -41,7 +41,7 @@ export const testnetConfig: Config = {
     },
   ],
   propertyTokenOfferingAddress: getAddress('0x223ad3ac5df27f8e062a805a04996f00f1feaceb'),
-  propertyTokenOfferingV2Address: getAddress('0x53A73e55B71e21768474216a723f315f3c53df7B'),
+  propertyTokenOfferingV2Address: getAddress('0x14A08726eb76922c289ff5dAEDba7099Dd7Bfd79'),
   uniswapPoolContracts: [
     {
       assetPairId: 'BST/POINT',
