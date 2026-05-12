@@ -2,17 +2,27 @@ import { PropertyTokenRevenueDistribution } from 'generated';
 import { PropertyToken, propertyTokenRecord } from 'generated/src/Types.gen';
 import { normalizeTimestampToSeconds } from './time';
 
-export const getNewPropertyTokenRevenueDistribution = (
-  propertyToken: PropertyToken,
-  chainId: number,
-  blockTimestamp: number,
-  contractAddress: string,
-  users: string[],
-  amounts: bigint[],
-  fromTime: bigint,
-  toTime: bigint,
-  tokenRecords: propertyTokenRecord[],
-): PropertyTokenRevenueDistribution => {
+export const getNewPropertyTokenRevenueDistribution = ({
+  propertyToken,
+  chainId,
+  blockTimestamp,
+  contractAddress,
+  users,
+  amounts,
+  fromTime,
+  toTime,
+  tokenRecords,
+}: {
+  propertyToken: PropertyToken;
+  chainId: number;
+  blockTimestamp: number;
+  contractAddress: string;
+  users: string[];
+  amounts: bigint[];
+  fromTime: bigint;
+  toTime: bigint;
+  tokenRecords: propertyTokenRecord[];
+}): PropertyTokenRevenueDistribution => {
   //Get total supply and property valuation for the period of the distribution instead of the current time
   const { totalSupply, propertyValuation } = getSupplyAndValuationForPeriod(
     normalizeTimestampToSeconds(Number(fromTime)),
