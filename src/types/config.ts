@@ -26,7 +26,7 @@ export type Config = {
     address: string;
   }>;
   propertyTokenOfferingAddress: string;
-  propertyTokenOfferingV2Address: string;
+  propertyTokenOfferingV2Address: string | null;
   uniswapWethDaiPoolAddress: string;
   usersRegistryAddress: string;
   zeroExAddress: string;

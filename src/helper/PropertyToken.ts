@@ -2,6 +2,8 @@ import { PropertyTokenHolder, PropertyTokenRecord } from 'generated';
 import { getDay, getHour } from './date';
 import { PropertyToken } from 'generated/src/Types.gen';
 
+export const MOCK_PROPERTY_ADDRESS = '0x489632e4953c0EeE5E327dc1527838d7E9B5dD32';
+
 export const getNewPropertyToken = (
   chainId: number,
   tokenAddress: string,

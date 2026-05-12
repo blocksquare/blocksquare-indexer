@@ -139,18 +139,14 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "property", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "property", "type": "address" }],
     "name": "claimRevenueForToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "property", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "property", "type": "address" }],
     "name": "getAverageMonthlyPayout",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -198,36 +194,28 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "dataProxy", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "dataProxy", "type": "address" }],
     "name": "setDataProxy",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "property", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "property", "type": "address" }],
     "name": "totalPayout",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "user", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "user", "type": "address" }],
     "name": "totalPendingRevenue",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "newOwner", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",

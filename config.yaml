@@ -204,7 +204,7 @@ networks:
           - 0x223aD3AC5Df27F8e062A805A04996F00f1fEAcEb
       - name: PropertyTokenOfferingV2
         address:
-          - 0x53A73e55B71e21768474216a723f315f3c53df7B
+          - 0x14A08726eb76922c289ff5dAEDba7099Dd7Bfd79
       - name: PropertyFactory
         address:
           - 0x67b899aF3F27072f15f22Bb33E5f1dF2696CAFcB
@@ -226,7 +226,7 @@ networks:
         start_block: 0
       - name: OneInchPostInteraction
         address:
-          - 0xC8B2029bF486c62d2086D767bA1C23b9485da29E
+          - 0xf578feD7b233fca3D227cE9e9A0f60073eE07170
       - name: UniswapPoolV2
         address: [0xc026cBA28A7f94C8Bc16547e979295191b2FD671,0x0E85fB1be698E777F2185350b4A52E5eE8DF51A6]
 

@@ -1,6 +1,10 @@
 import { DataStorageProxy } from 'generated';
+import {MOCK_PROPERTY_ADDRESS} from "../helper/PropertyToken";
 
 DataStorageProxy.TransferPropertyToCP.handler(async ({ event, context }) => {
+  // Skip handling mock property token. Temporary fix until v2 contracts are deployed.
+  if (event.params.property === MOCK_PROPERTY_ADDRESS) return;
+
   const [cpWallet, propertyToken] = await Promise.all([
     context.Wallet.getOrThrow(
       `${event.chainId}-${event.params.cp}`,

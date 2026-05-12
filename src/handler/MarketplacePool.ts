@@ -1,6 +1,7 @@
 import { MarketplacePool } from 'generated';
 import { getMarketplacePoolRecord, getNewMarketplacePoolPosition } from '../helper/MarketplacePool';
-import { getNewWallet } from '../helper/Wallet';
+import {ensureWallet, getNewWallet} from '../helper/Wallet';
+import { MarketplacePoolTransactionType } from '../types/enums';
 
 MarketplacePool.CPInitialized.handler(async ({ event, context }) => {
   const marketplacePool = await context.MarketplacePool.getOrThrow(
@@ -75,6 +76,20 @@ MarketplacePool.Deposit.handler(async ({ event, context }) => {
     stakedAmount: finalMarketplacePoolPosition.stakedAmount + event.params.inAmount,
     vAmount: finalMarketplacePoolPosition.vAmount + event.params.outAmount,
   });
+
+  context.MarketplacePoolTransaction.set({
+    id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+    chainId: event.chainId,
+    pool_id: `${event.chainId}-${event.srcAddress}`,
+    transactionType: MarketplacePoolTransactionType.DEPOSIT,
+    transactionHash: event.transaction.hash,
+    blockNumber: event.block.number,
+    blockTimestamp: event.block.timestamp,
+    wallet_id: `${event.chainId}-${event.params.owner}`,
+    amount: event.params.inAmount,
+    issuedAmount: event.params.outAmount,
+    reward: undefined,
+  });
 });
 
 MarketplacePool.Withdraw.handler(async ({ event, context }) => {
@@ -106,6 +121,20 @@ MarketplacePool.Withdraw.handler(async ({ event, context }) => {
     stakedAmount: marketplacePoolPosition.stakedAmount - event.params.outAmount,
     vAmount: marketplacePoolPosition.vAmount - event.params.inAmount,
     rewards: marketplacePoolPosition.rewards + event.params.reward,
+  });
+
+  context.MarketplacePoolTransaction.set({
+    id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+    chainId: event.chainId,
+    pool_id: `${event.chainId}-${event.srcAddress}`,
+    transactionType: MarketplacePoolTransactionType.WITHDRAW,
+    transactionHash: event.transaction.hash,
+    blockNumber: event.block.number,
+    blockTimestamp: event.block.timestamp,
+    wallet_id: `${event.chainId}-${event.params.owner}`,
+    amount: event.params.outAmount,
+    issuedAmount: event.params.inAmount,
+    reward: event.params.reward,
   });
 });
 
@@ -149,6 +178,22 @@ MarketplacePool.Reward.handler(async ({ event, context }) => {
   context.MarketplacePoolRecord.set(
     getMarketplacePoolRecord(marketplacePoolUpdated, event.block.timestamp),
   );
+
+  const rewardWalletId = await ensureWallet(context, event.chainId, event.params.from);
+
+  context.MarketplacePoolTransaction.set({
+    id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
+    chainId: event.chainId,
+    pool_id: `${event.chainId}-${event.srcAddress}`,
+    transactionType: MarketplacePoolTransactionType.REWARD,
+    transactionHash: event.transaction.hash,
+    blockNumber: event.block.number,
+    blockTimestamp: event.block.timestamp,
+    wallet_id: rewardWalletId,
+    amount: event.params.amount,
+    issuedAmount: undefined,
+    reward: undefined,
+  });
 });
 
 MarketplacePool.LockExtended.handler(async ({ event, context }) => {
