@@ -88,6 +88,7 @@ PropertyTokenOfferingV2.Invested.handler(async ({ event, context }) => {
     investmentToken: params.investmentToken,
     amountInvested: params.amountInvested,
     amountReceived: params.amountReceived,
+    blockTimestamp: event.block.timestamp,
   });
 });
 

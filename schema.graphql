@@ -639,6 +639,7 @@ type MainSaleInvestment {
   investmentToken: String!
   amountInvested: BigInt!
   amountReceived: BigInt!
+  blockTimestamp: Int!
 }
 
 # chainId-propertyAddress-saleIndex
