@@ -100,7 +100,7 @@ UniswapV4Staking.Deposit.handler(async ({ event, context }) => {
     chainId,
     srcAddress: stakingContractAddress,
     transaction: { hash: transactionHash },
-    block: { timestamp },
+    block: { timestamp, number: blockNumber },
     logIndex,
   } = event;
   const { owner, tokenId, liquidity, lockedUntil, timeBoost } = event.params;
@@ -162,13 +162,16 @@ UniswapV4Staking.Deposit.handler(async ({ event, context }) => {
       id: `${stakingPoolEntityId}-${existingUniToken.tokenId}-${hourId}-${logIndex}`,
       transactionHash,
       chainId,
-      hourStartTimestamp: hourStart,
       dayStartTimestamp: dayStart,
+      blockTimestamp: timestamp,
+      blockNumber,
       tokenId,
       pool_id: stakingPoolEntityId,
       rewardsClaimed: 0n,
       rewardsBurned: 0n,
       transactionType: StakingPoolV4PositionRecordType.DEPOSIT,
+      stakingPosition_id: positionEntityId,
+      wallet_id: wallet.id
     });
   }
 });
@@ -186,7 +189,7 @@ UniswapV4Staking.Withdraw.handler(async ({ event, context }) => {
     chainId,
     transaction: { hash: transactionHash },
     srcAddress: stakingContractAddress,
-    block: { timestamp },
+    block: { timestamp, number: blockNumber },
     logIndex,
   } = event;
   const { owner, tokenId } = event.params;
@@ -215,13 +218,16 @@ UniswapV4Staking.Withdraw.handler(async ({ event, context }) => {
       id: `${stakingPosition.pool_id}-${tokenId}-${hourId}-${logIndex}`,
       transactionHash,
       chainId,
-      hourStartTimestamp: hourStart,
       dayStartTimestamp: dayStart,
+      blockTimestamp: timestamp,
+      blockNumber,
       tokenId,
       rewardsClaimed: 0n,
       rewardsBurned: 0n,
       transactionType: StakingPoolV4PositionRecordType.WITHDRAW,
       pool_id: stakingContractId,
+      stakingPosition_id: stakingPositionEntityId,
+      wallet_id: `${chainId}-${owner}`
     });
   }
 });
@@ -241,7 +247,7 @@ UniswapV4Staking.EarlyWithdraw.handler(async ({ event, context }) => {
     chainId,
     transaction: { hash: transactionHash },
     srcAddress: stakingContractAddress,
-    block: { timestamp },
+    block: { timestamp, number: blockNumber },
     logIndex,
   } = event;
   const { owner, tokenId } = event.params;
@@ -271,13 +277,16 @@ UniswapV4Staking.EarlyWithdraw.handler(async ({ event, context }) => {
       id: `${stakingPosition.pool_id}-${tokenId}-${hourId}-${logIndex}`,
       transactionHash,
       chainId,
-      hourStartTimestamp: hourStart,
       dayStartTimestamp: dayStart,
+      blockTimestamp: timestamp,
+      blockNumber,
       tokenId,
       rewardsClaimed: 0n,
       rewardsBurned: 0n,
       transactionType: StakingPoolV4PositionRecordType.EARLY_WITHDRAW,
       pool_id: stakingContractId,
+      stakingPosition_id: stakingPositionEntityId,
+      wallet_id: `${chainId}-${owner}`
     });
   }
 });
@@ -540,7 +549,7 @@ UniswapV4Staking.RewardsClaimed.handler(async ({ event, context }) => {
 
   const {
     chainId,
-    block: { timestamp },
+    block: { timestamp, number: blockNumber },
     params: { tokenId, amount },
     srcAddress: stakingContractAddress,
     transaction: { hash, from },
@@ -571,17 +580,21 @@ UniswapV4Staking.RewardsClaimed.handler(async ({ event, context }) => {
     totalRewardsClaimed: stakingPool.totalRewardsClaimed + amount,
   });
 
+  const stakingPositionEntityId = `${chainId}-${from}-${tokenId}`;
   context.StakingPoolV4PositionRecord.set({
     id: `${stakingPool.id}-${uniswapV4PositionToken.tokenId}-${hourId}-${logIndex}`,
     chainId,
     dayStartTimestamp: dayStart,
-    hourStartTimestamp: hourStart,
+    blockTimestamp: timestamp,
+    blockNumber,
     pool_id: stakingPool.id,
     rewardsClaimed: amount,
     rewardsBurned: 0n,
     transactionHash: hash,
     tokenId: uniswapV4PositionToken.tokenId,
     transactionType: StakingPoolV4PositionRecordType.REWARDS_CLAIMED,
+    stakingPosition_id: stakingPositionEntityId,
+    wallet_id: walletEntityId
   });
 
   if (cumilativeRewardsData) {
@@ -624,7 +637,7 @@ UniswapV4Staking.RewardsBurned.handler(async ({ event, context }) => {
 
   const {
     chainId,
-    block: { timestamp },
+    block: { timestamp, number: blockNumber },
     params: { tokenId, amount },
     srcAddress: stakingContractAddress,
     transaction: { hash, from },
@@ -655,17 +668,21 @@ UniswapV4Staking.RewardsBurned.handler(async ({ event, context }) => {
     totalRewardsBurned: stakingPool.totalRewardsBurned + amount,
   });
 
+  const stakingPositionEntityId = `${chainId}-${from}-${tokenId}`;
   context.StakingPoolV4PositionRecord.set({
     id: `${stakingPool.id}-${uniswapV4PositionToken.tokenId}-${hourId}-${logIndex}`,
     chainId,
     dayStartTimestamp: dayStart,
-    hourStartTimestamp: hourStart,
+    blockTimestamp: timestamp,
+    blockNumber,
     pool_id: stakingPool.id,
     rewardsClaimed: 0n,
     rewardsBurned: amount,
     transactionHash: hash,
     tokenId: uniswapV4PositionToken.tokenId,
     transactionType: StakingPoolV4PositionRecordType.REWARDS_BURNED,
+    stakingPosition_id: stakingPositionEntityId,
+    wallet_id: walletEntityId
   });
 
   if (cumilativeRewardsData) {

@@ -2,6 +2,7 @@ import { ZeroAddress } from "ethers";
 import { UniswapV4PoolManager } from "generated";
 import { getLoadedConfig } from "../config";
 import { getAmount0, getAmount1 } from "../helper/UniswapV4Helpers/liquidityAmounts";
+import { getDay } from "../helper/date";
 
 const bstTokenAddress = getLoadedConfig().blockSquareTokenAddress;
 
@@ -97,7 +98,7 @@ UniswapV4PoolManager.ModifyLiquidity.handler(async ({ event, context }) => {
   const {
     chainId,
     transaction: { hash: transactionHash },
-    block: { number: blockNumber },
+    block: { number: blockNumber, timestamp },
   } = event;
   const {
     id: poolId,
@@ -162,6 +163,8 @@ UniswapV4PoolManager.ModifyLiquidity.handler(async ({ event, context }) => {
     });
   }
 
+  const { start: dayStart } = getDay(timestamp);
+
   context.UniswapV4PoolPositionRecord.set({
     id: `${positionUniqueKey}-${blockNumber}`,
     blockNumber,
@@ -174,6 +177,9 @@ UniswapV4PoolManager.ModifyLiquidity.handler(async ({ event, context }) => {
     pool_id: poolEntityId,
     uniqueKey: positionUniqueKey,
     amount0,
-    amount1
+    amount1,
+    blockTimestamp: timestamp,
+    dayStartTimestamp: dayStart,
+    uniPosition_id: positionId,
   });
 });

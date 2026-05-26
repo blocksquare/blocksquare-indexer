@@ -287,6 +287,7 @@ type Wallet {
   properties: [PropertyTokenHolder!]! @derivedFrom(field: "wallet")
   stakingPositions: [StakingPoolPosition!]! @derivedFrom(field: "wallet")
   stakingV4Positions: [StakingPoolV4Position!]! @derivedFrom(field: "wallet")
+  stakingV4PositionRecords: [StakingPoolV4PositionRecord!]! @derivedFrom(field: "wallet")
   uniswapV4Tokens: [UniswapV4PositionToken!]! @derivedFrom(field: "wallet")
   cumulativeRewards: [UserCumulativeReward!]! @derivedFrom(field: "wallet")
   propertyStakingPositions: [PropertyStakingPoolPosition!]!
@@ -562,11 +563,13 @@ type UniswapV4PoolPosition {
   transactionHash: String!
   pool: UniswapV4Pool! @index
   token: [UniswapV4PositionToken!]! @derivedFrom(field: "position")
+  positionRecords: [UniswapV4PoolPositionRecord!]! @derivedFrom(field: "uniPosition")
 }
 
 type UniswapV4PoolPositionRecord {
   id: ID! # ${chainId}-${poolId}-${tickLower}-${tickUpper}-${salt}
   blockNumber: Int!
+  blockTimestamp: Int!
   uniqueKey: String! @index
   chainId: Int!
   tickLower: BigInt!
@@ -577,6 +580,9 @@ type UniswapV4PoolPositionRecord {
   salt: String!
   transactionHash: String!
   pool: UniswapV4Pool! @index
+  uniPosition: UniswapV4PoolPosition
+  "Timestamp of the date start (mightnight UTC) in seconds"
+  dayStartTimestamp: Int!
 }
 
 type UniswapV4PositionToken {
@@ -627,6 +633,7 @@ type StakingPoolV4Position {
   pool: StakingPoolV4!
   positionToken: UniswapV4PositionToken
   uniPosition: UniswapV4PoolPosition
+  historyRecords: [StakingPoolV4PositionRecord!]! @derivedFrom(field: "stakingPosition")
 }
 
 type StakingPoolV4Record {
@@ -659,10 +666,12 @@ type StakingPoolV4PositionRecord {
   rewardsClaimed: BigInt!
   rewardsBurned: BigInt!
   pool: StakingPoolV4!
-  "Timestamp of the hour start (midnight UTC) in seconds"
-  hourStartTimestamp: Int! @index
+  blockTimestamp: Int!
+  blockNumber: Int!
   "Timestamp of the date start (midnight UTC) in seconds"
   dayStartTimestamp: Int! @index
+  stakingPosition: StakingPoolV4Position!
+  wallet: Wallet!
 }
 
 type UserCumulativeReward {
