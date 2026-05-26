@@ -2,6 +2,13 @@ import { MarketplacePool } from 'generated';
 import { getMarketplacePoolRecord, getNewMarketplacePoolPosition } from '../helper/MarketplacePool';
 import {ensureWallet, getNewWallet} from '../helper/Wallet';
 import { MarketplacePoolTransactionType } from '../types/enums';
+import { getLoadedConfig } from '../config';
+import { getDay } from '../helper/date';
+import { getAddress } from 'ethers';
+import { calculatePoolRatio } from '../helper/StakingPool';
+import { BigDecimal } from 'generated';
+
+const { governancePoolAddress } = getLoadedConfig();
 
 MarketplacePool.CPInitialized.handler(async ({ event, context }) => {
   const marketplacePool = await context.MarketplacePool.getOrThrow(
@@ -37,6 +44,10 @@ MarketplacePool.CPInitialized.handler(async ({ event, context }) => {
 });
 
 MarketplacePool.Deposit.handler(async ({ event, context }) => {
+  const { start: dayStart } = getDay(event.block.timestamp);
+  const checksumGovAddress = getAddress(governancePoolAddress)
+  const stakingPool = await context.StakingPool.get(`${event.chainId}-${checksumGovAddress}`)
+
   const [marketplacePool, marketplacePoolPosition] = await Promise.all([
     context.MarketplacePool.getOrThrow(
       `${event.chainId}-${event.srcAddress}`,
@@ -89,10 +100,16 @@ MarketplacePool.Deposit.handler(async ({ event, context }) => {
     amount: event.params.inAmount,
     issuedAmount: event.params.outAmount,
     reward: undefined,
+    dayStartTimestamp: dayStart,
+    ratioAtTransaction: stakingPool ? calculatePoolRatio(stakingPool) : BigDecimal(0),
   });
 });
 
 MarketplacePool.Withdraw.handler(async ({ event, context }) => {
+  const { start: dayStart } = getDay(event.block.timestamp);
+  const checksumGovAddress = getAddress(governancePoolAddress)
+  const stakingPool = await context.StakingPool.get(`${event.chainId}-${checksumGovAddress}`)
+
   const [marketplacePool, marketplacePoolPosition] = await Promise.all([
     context.MarketplacePool.getOrThrow(
       `${event.chainId}-${event.srcAddress}`,
@@ -135,6 +152,8 @@ MarketplacePool.Withdraw.handler(async ({ event, context }) => {
     amount: event.params.outAmount,
     issuedAmount: event.params.inAmount,
     reward: event.params.reward,
+    dayStartTimestamp: dayStart,
+    ratioAtTransaction: stakingPool ? calculatePoolRatio(stakingPool) : BigDecimal(0),
   });
 });
 
@@ -164,6 +183,10 @@ MarketplacePool.Capped.handler(async ({ event, context }) => {
 });
 
 MarketplacePool.Reward.handler(async ({ event, context }) => {
+  const { start: dayStart } = getDay(event.block.timestamp);
+  const checksumGovAddress = getAddress(governancePoolAddress)
+  const stakingPool = await context.StakingPool.get(`${event.chainId}-${checksumGovAddress}`)
+
   const marketplacePool = await context.MarketplacePool.getOrThrow(
     `${event.chainId}-${event.srcAddress}`,
     'MarketplacePool.Reward.handler: MarketplacePool not found',
@@ -193,6 +216,8 @@ MarketplacePool.Reward.handler(async ({ event, context }) => {
     amount: event.params.amount,
     issuedAmount: undefined,
     reward: undefined,
+    dayStartTimestamp: dayStart,
+    ratioAtTransaction: stakingPool ? calculatePoolRatio(stakingPool) : BigDecimal(0),
   });
 });
 

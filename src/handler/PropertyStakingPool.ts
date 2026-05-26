@@ -10,6 +10,7 @@ import {
 import {ensureWallet, getNewWallet} from '../helper/Wallet';
 import { BIGINT_100K, WEI_DECIMALS } from '../helper/constants';
 import { PropertyStakingPoolTransactionType } from '../types/enums';
+import { getDay } from '../helper/date';
 
 PropertyStakingPool.Deposit.handler(async ({ event, context }) => {
   const valuationAddress = getValuationAddressForPropertyStakingPool(event.srcAddress);
@@ -96,6 +97,8 @@ PropertyStakingPool.Deposit.handler(async ({ event, context }) => {
 
   context.TokenDeposit.set(tokenDeposit);
 
+  const { start: dayStart } = getDay(event.block.timestamp);
+
   context.PropertyStakingPoolTransaction.set({
     id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
     chainId: event.chainId,
@@ -106,9 +109,11 @@ PropertyStakingPool.Deposit.handler(async ({ event, context }) => {
     blockTimestamp: event.block.timestamp,
     wallet_id: `${event.chainId}-${event.params.owner}`,
     amount: event.params.inAmount,
+    tokenAddress: event.params.property,
     issuedAmount: event.params.outAmount,
     rewardToUser: undefined,
     rewardToFeeReceiver: undefined,
+    dayStartTimestamp: dayStart
   });
 });
 
@@ -182,6 +187,8 @@ PropertyStakingPool.Withdraw.handler(async ({ event, context }) => {
   // Remove token deposit
   context.TokenDeposit.deleteUnsafe(tokenDeposit.id);
 
+  const { start: dayStart } = getDay(event.block.timestamp);
+
   context.PropertyStakingPoolTransaction.set({
     id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
     chainId: event.chainId,
@@ -192,9 +199,11 @@ PropertyStakingPool.Withdraw.handler(async ({ event, context }) => {
     blockTimestamp: event.block.timestamp,
     wallet_id: `${event.chainId}-${event.params.owner}`,
     amount: event.params.outAmount,
+    tokenAddress: event.params.property,
     issuedAmount: event.params.inAmount,
     rewardToUser: event.params.rewardToUser,
     rewardToFeeReceiver: event.params.rewardToFeeReciever,
+    dayStartTimestamp: dayStart
   });
 });
 
@@ -217,6 +226,8 @@ PropertyStakingPool.Reward.handler(async ({ event, context }) => {
 
   const rewardWalletId = await ensureWallet(context, event.chainId, event.params.from);
 
+  const { start: dayStart } = getDay(event.block.timestamp);
+
   context.PropertyStakingPoolTransaction.set({
     id: `${event.chainId}-${event.transaction.hash}-${event.logIndex}`,
     chainId: event.chainId,
@@ -227,8 +238,10 @@ PropertyStakingPool.Reward.handler(async ({ event, context }) => {
     blockTimestamp: event.block.timestamp,
     wallet_id: rewardWalletId,
     amount: event.params.amount,
+    tokenAddress: '',
     issuedAmount: undefined,
     rewardToUser: undefined,
     rewardToFeeReceiver: undefined,
+    dayStartTimestamp: dayStart
   });
 });

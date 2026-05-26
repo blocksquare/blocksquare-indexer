@@ -332,6 +332,7 @@ type StakingPoolTransaction {
   wallet: Wallet!
   amount: BigInt!
   issuedAmount: BigInt
+  dayStartTimestamp: Int!
 }
 
 type StakingPool {
@@ -383,9 +384,11 @@ type PropertyStakingPoolTransaction {
   blockTimestamp: Int!
   wallet: Wallet!
   amount: BigInt!
+  tokenAddress: Bytes!
   issuedAmount: BigInt
   rewardToUser: BigInt
   rewardToFeeReceiver: BigInt
+  dayStartTimestamp: Int!
 }
 
 type PropertyStakingPool {
@@ -443,6 +446,8 @@ type MarketplacePoolTransaction {
   amount: BigInt!
   issuedAmount: BigInt
   reward: BigInt
+  ratioAtTransaction: BigDecimal!
+  dayStartTimestamp: Int!
 }
 
 type MarketplacePool {
