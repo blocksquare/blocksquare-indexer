@@ -196,7 +196,7 @@ type PropertyTokenRevenueDistribution {
   blockTimestamp: Int!
   chainId: Int!
   contractAddress: String!
-  propertyToken: PropertyToken!
+  propertyToken: PropertyToken! @index
   amounts: [BigInt!]!
   totalAmount: BigInt!
   totalSupply: BigInt!
@@ -571,7 +571,7 @@ type PropertyTokenRecord {
   totalHolders: Int!
   tokenValuation: BigInt!
   propertyValuation: BigInt! @index
-  propertyToken: PropertyToken!
+  propertyToken: PropertyToken! @index
   countryCode: String!
 }
 

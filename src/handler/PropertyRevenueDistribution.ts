@@ -11,8 +11,12 @@ indexer.onEvent(
 
   const [propertyTokenRevenueDistributionsLoaded, propertyTokenRecordsLoaded, propertyTokenLoaded] =
     await Promise.all([
-      await context.PropertyTokenRevenueDistribution.getWhere.propertyToken_id.eq(propertyId),
-      await context.PropertyTokenRecord.getWhere.propertyToken_id.eq(propertyId),
+      await context.PropertyTokenRevenueDistribution.getWhere({
+        propertyToken_id: { _eq: propertyId },
+      }),
+      await context.PropertyTokenRecord.getWhere({
+        propertyToken_id: { _eq: propertyId },
+      }),
       await context.PropertyToken.getOrThrow(
         propertyId,
         'PropertyRevenueDistribution.RevenueAdded.handler: Property not found',
