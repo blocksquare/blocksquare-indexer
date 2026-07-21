@@ -1,5 +1,5 @@
-import { PropertyTokenRevenueDistribution } from 'generated';
-import { PropertyToken, propertyTokenRecord } from 'generated/src/Types.gen';
+import { PropertyTokenRevenueDistribution } from "envio";
+import { type PropertyToken, propertyTokenRecord } from "envio";
 import { normalizeTimestampToSeconds } from './time';
 
 export const getNewPropertyTokenRevenueDistribution = ({

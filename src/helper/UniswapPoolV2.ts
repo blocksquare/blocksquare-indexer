@@ -1,6 +1,6 @@
 import { getDay, getHour } from './date';
 import { formatTo8Decimals } from './format';
-import { AssetPair, AssetPairPrice, BigDecimal, UniswapV2Pool } from 'generated';
+import { AssetPair, AssetPairPrice, BigDecimal, UniswapV2Pool } from "envio";
 
 /**
  * Generic function to calculate and store USD price for any BST/TOKEN pair

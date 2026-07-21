@@ -37,3 +37,4 @@ config.yaml
 .env
 .serena
 .github/workflows/test-event.json
+.envio/

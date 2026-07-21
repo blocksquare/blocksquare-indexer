@@ -1,9 +1,11 @@
-import { PropertyTokenOfferingV2 } from 'generated';
+import { indexer, PropertyTokenOfferingV2 } from "envio";
 import { ensureOfferingV2 } from '../helper/PropertyTokenOfferingV2';
 
 // ─── MainSaleAdded ──────────────────────────────────────────────────────────────
 
-PropertyTokenOfferingV2.MainSaleAdded.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOfferingV2", event: "MainSaleAdded" },
+  async ({ event, context }) => {
   const { params } = event;
   const propertyId = `${event.chainId}-${params.property}`;
   const mainSaleId = `${propertyId}-${params.mainSaleId}`;
@@ -29,11 +31,14 @@ PropertyTokenOfferingV2.MainSaleAdded.handler(async ({ event, context }) => {
     investmentTokens: params.investmentTokens,
     status: 'active',
   });
-});
+}
+);
 
 // ─── PresaleAdded ───────────────────────────────────────────────────────────────
 
-PropertyTokenOfferingV2.PresaleAdded.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOfferingV2", event: "PresaleAdded" },
+  async ({ event, context }) => {
   const { params } = event;
   const propertyId = `${event.chainId}-${params.property}`;
   const presaleId = `${propertyId}-${params.presaleId}`;
@@ -54,11 +59,14 @@ PropertyTokenOfferingV2.PresaleAdded.handler(async ({ event, context }) => {
     totalMintedAmount: 0n,
     status: 'active',
   });
-});
+}
+);
 
 // ─── Invested ───────────────────────────────────────────────────────────────────
 
-PropertyTokenOfferingV2.Invested.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOfferingV2", event: "Invested" },
+  async ({ event, context }) => {
   const { params } = event;
 
   const mainSaleId = `${event.chainId}-${params.property}-${params.mainSaleId}`;
@@ -90,11 +98,14 @@ PropertyTokenOfferingV2.Invested.handler(async ({ event, context }) => {
     amountReceived: params.amountReceived,
     blockTimestamp: event.block.timestamp,
   });
-});
+}
+);
 
 // ─── PresaleTokensMinted ────────────────────────────────────────────────────────
 
-PropertyTokenOfferingV2.PresaleTokensMinted.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOfferingV2", event: "PresaleTokensMinted" },
+  async ({ event, context }) => {
   const { params } = event;
 
   const presaleId = `${event.chainId}-${params.property}-${params.presaleId}`;
@@ -108,11 +119,14 @@ PropertyTokenOfferingV2.PresaleTokensMinted.handler(async ({ event, context }) =
     totalMintedAmount: params.totalMintedAmount,
     status: 'finished',
   });
-});
+}
+);
 
 // ─── ClaimInvestment ────────────────────────────────────────────────────────────
 
-PropertyTokenOfferingV2.ClaimInvestment.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOfferingV2", event: "ClaimInvestment" },
+  async ({ event, context }) => {
   const { params } = event;
 
   const mainSaleId = `${event.chainId}-${params.property}-${params.mainSaleId}`;
@@ -125,11 +139,14 @@ PropertyTokenOfferingV2.ClaimInvestment.handler(async ({ event, context }) => {
     ...mainSale,
     status: 'finished',
   });
-});
+}
+);
 
 // ─── MainSaleCanceled ───────────────────────────────────────────────────────────
 
-PropertyTokenOfferingV2.MainSaleCanceled.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOfferingV2", event: "MainSaleCanceled" },
+  async ({ event, context }) => {
   const { params } = event;
 
   const mainSaleId = `${event.chainId}-${params.property}-${params.mainSaleId}`;
@@ -142,11 +159,14 @@ PropertyTokenOfferingV2.MainSaleCanceled.handler(async ({ event, context }) => {
     ...mainSale,
     status: 'canceled',
   });
-});
+}
+);
 
 // ─── PresaleCanceled ────────────────────────────────────────────────────────────
 
-PropertyTokenOfferingV2.PresaleCanceled.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOfferingV2", event: "PresaleCanceled" },
+  async ({ event, context }) => {
   const { params } = event;
 
   const presaleId = `${event.chainId}-${params.property}-${params.presaleId}`;
@@ -159,11 +179,14 @@ PropertyTokenOfferingV2.PresaleCanceled.handler(async ({ event, context }) => {
     ...presale,
     status: 'canceled',
   });
-});
+}
+);
 
 // ─── MainSaleInvestmentsRefunded fires one if not get minCap ────────────────────────────────────────────────
 
-PropertyTokenOfferingV2.MainSaleInvestmentsRefunded.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOfferingV2", event: "MainSaleInvestmentsRefunded" },
+  async ({ event, context }) => {
   const { params } = event;
 
   const mainSaleId = `${event.chainId}-${params.property}-${params.mainSaleId}`;
@@ -176,11 +199,14 @@ PropertyTokenOfferingV2.MainSaleInvestmentsRefunded.handler(async ({ event, cont
     ...mainSale,
     status: 'refunded',
   });
-});
+}
+);
 
 // ─── PresaleInvestmentsRefunded ─────────────────────────────────────────────────
 
-PropertyTokenOfferingV2.PresaleInvestmentsRefunded.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOfferingV2", event: "PresaleInvestmentsRefunded" },
+  async ({ event, context }) => {
   const { params } = event;
 
   const presaleId = `${event.chainId}-${params.property}-${params.presaleId}`;
@@ -193,4 +219,5 @@ PropertyTokenOfferingV2.PresaleInvestmentsRefunded.handler(async ({ event, conte
     ...presale,
     status: 'refunded',
   });
-});
+}
+);

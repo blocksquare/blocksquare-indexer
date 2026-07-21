@@ -1,4 +1,4 @@
-import { PropertyStakingPool } from 'generated';
+import { indexer, PropertyStakingPool } from "envio";
 import {
   calculatePropertyPoolRatio,
   getNewPropertyStakingPool,
@@ -12,7 +12,9 @@ import { BIGINT_100K, WEI_DECIMALS } from '../helper/constants';
 import { PropertyStakingPoolTransactionType } from '../types/enums';
 import { getDay } from '../helper/date';
 
-PropertyStakingPool.Deposit.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyStakingPool", event: "Deposit" },
+  async ({ event, context }) => {
   const valuationAddress = getValuationAddressForPropertyStakingPool(event.srcAddress);
 
   const [loadedStakingPool, tokenInformation] = await Promise.all([
@@ -115,9 +117,12 @@ PropertyStakingPool.Deposit.handler(async ({ event, context }) => {
     rewardToFeeReceiver: undefined,
     dayStartTimestamp: dayStart
   });
-});
+}
+);
 
-PropertyStakingPool.Withdraw.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyStakingPool", event: "Withdraw" },
+  async ({ event, context }) => {
   // Edge case: Some users attempt zero-value withdrawals without having any token balance
   // Example TX: 0x1e546e039bf5e32b0f223ffb19dcfac10d8d714b5b3fc35f0da20602d71641ea
   if (event.params.inAmount === 0n) return;
@@ -205,9 +210,12 @@ PropertyStakingPool.Withdraw.handler(async ({ event, context }) => {
     rewardToFeeReceiver: event.params.rewardToFeeReciever,
     dayStartTimestamp: dayStart
   });
-});
+}
+);
 
-PropertyStakingPool.Reward.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyStakingPool", event: "Reward" },
+  async ({ event, context }) => {
   // Unlike the withdraw, we can have a case where we have no staking pool object yet
   const stakingPool = await context.PropertyStakingPool.getOrCreate(
     getNewPropertyStakingPool(event.chainId, event.srcAddress),
@@ -244,4 +252,5 @@ PropertyStakingPool.Reward.handler(async ({ event, context }) => {
     rewardToFeeReceiver: undefined,
     dayStartTimestamp: dayStart
   });
-});
+}
+);

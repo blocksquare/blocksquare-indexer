@@ -1,7 +1,9 @@
-import { DataStorageProxy } from 'generated';
+import { indexer, DataStorageProxy } from "envio";
 import {MOCK_PROPERTY_ADDRESS} from "../helper/PropertyToken";
 
-DataStorageProxy.TransferPropertyToCP.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "DataStorageProxy", event: "TransferPropertyToCP" },
+  async ({ event, context }) => {
   // Skip handling mock property token. Temporary fix until v2 contracts are deployed.
   if (event.params.property === MOCK_PROPERTY_ADDRESS) return;
 
@@ -26,4 +28,5 @@ DataStorageProxy.TransferPropertyToCP.handler(async ({ event, context }) => {
     certifiedPartner_id: cpWallet.certifiedPartner_id,
     certifiedPartnerWallet_id: cpWallet.id,
   });
-});
+}
+);
