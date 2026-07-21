@@ -1,7 +1,9 @@
-import { PriceDataFeed } from 'generated';
+import { indexer, PriceDataFeed } from "envio";
 import { getDay, getHour } from '../helper/date';
 
-PriceDataFeed.AnswerUpdated.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PriceDataFeed", event: "AnswerUpdated" },
+  async ({ event, context }) => {
   // Returns a list that should always only contain a maximum of one entry
   const assetPairs =
     await context.AssetPair.getWhere.latestAggregatorAddress.eq(
@@ -39,4 +41,5 @@ PriceDataFeed.AnswerUpdated.handler(async ({ event, context }) => {
     latestPriceBI: newPrice.priceBI,
     updatedAt: event.block.timestamp,
   });
-});
+}
+);

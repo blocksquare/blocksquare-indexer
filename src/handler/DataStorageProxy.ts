@@ -1,6 +1,8 @@
-import { DataStorageProxy } from 'generated';
+import { indexer, DataStorageProxy } from "envio";
 
-DataStorageProxy.TransferPropertyToCP.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "DataStorageProxy", event: "TransferPropertyToCP" },
+  async ({ event, context }) => {
   const [cpWallet, propertyToken] = await Promise.all([
     context.Wallet.getOrThrow(
       `${event.chainId}-${event.params.cp}`,
@@ -22,4 +24,5 @@ DataStorageProxy.TransferPropertyToCP.handler(async ({ event, context }) => {
     certifiedPartner_id: cpWallet.certifiedPartner_id,
     certifiedPartnerWallet_id: cpWallet.id,
   });
-});
+}
+);

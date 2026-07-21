@@ -1,6 +1,6 @@
-import { PropertyTokenHolder, PropertyTokenRecord } from 'generated';
+import { PropertyTokenHolder, PropertyTokenRecord } from "envio";
 import { getDay, getHour } from './date';
-import { PropertyToken } from 'generated/src/Types.gen';
+import { type PropertyToken } from "envio";
 
 export const getNewPropertyToken = (
   chainId: number,

@@ -1,4 +1,4 @@
-import { PropertyToken } from 'generated';
+import { indexer, PropertyToken } from "envio";
 import { ZeroAddress } from 'ethers';
 import {
   calculateWeightedNAVDeviation,
@@ -7,7 +7,9 @@ import {
 } from '../helper/PropertyToken';
 import { getNewWallet } from '../helper/Wallet';
 
-PropertyToken.Transfer.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyToken", event: "Transfer" },
+  async ({ event, context }) => {
   // Skip if value is 0
   if (event.params.value === 0n) return;
 
@@ -127,9 +129,12 @@ PropertyToken.Transfer.handler(async ({ event, context }) => {
       from_id: `${event.chainId}-${transferFrom}`,
       to_id: `${event.chainId}-${transferTo}`,
     });
-});
+}
+);
 
-PropertyToken.CapitalStackChange.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyToken", event: "CapitalStackChange" },
+  async ({ event, context }) => {
   context.PropertyTokenCapitalStack.set({
     id: `${event.chainId}-${event.srcAddress}-${event.logIndex}`,
     chainId: event.chainId,
@@ -142,4 +147,5 @@ PropertyToken.CapitalStackChange.handler(async ({ event, context }) => {
     juniorDebt: event.params.juniorDebt,
     seniorDebt: event.params.seniorDebt,
   });
-});
+}
+);

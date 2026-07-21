@@ -1,4 +1,4 @@
-import { BigDecimal, UniswapPoolV2 } from 'generated';
+import { indexer, BigDecimal, UniswapPoolV2 } from "envio";
 import { getLoadedConfig } from '../config';
 import { formatTo8Decimals } from '../helper/format';
 import { ZeroAddress } from 'ethers';
@@ -16,7 +16,9 @@ const uniswapBstPointPoolAddress = getLoadedConfig().uniswapPoolContracts.find(
   (contract) => contract.assetPairId === 'BST/POINT'
 )?.address;
 
-UniswapPoolV2.Swap.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "UniswapPoolV2", event: "Swap" },
+  async ({ event, context }) => {
   const [ethUSDAssetPair, bstUSDAssetPair] = await Promise.all([
     context.AssetPair.get('ETH/USD'),
     context.AssetPair.get('BST/USD'),
@@ -92,4 +94,5 @@ UniswapPoolV2.Swap.handler(async ({ event, context }) => {
       }
     }
   }
-});
+}
+);

@@ -1,4 +1,4 @@
-import { Wallet } from 'generated';
+import { Wallet } from "envio";
 
 export const getNewWallet = (
   chainId: number,

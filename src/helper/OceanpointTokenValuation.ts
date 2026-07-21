@@ -1,4 +1,4 @@
-import { OceanpointTokenInformation } from 'generated';
+import { OceanpointTokenInformation } from "envio";
 import {PropertyStakingPoolType} from "../types/enums";
 
 export const getNewOceanpointTokenInformation = (

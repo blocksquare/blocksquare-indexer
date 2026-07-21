@@ -1,16 +1,16 @@
-import { PropertyFactory } from 'generated';
+import { indexer, PropertyFactory } from "envio";
 import { getNewPropertyToken } from '../helper/PropertyToken';
 
-PropertyFactory.NewPropToken.contractRegister(
-  ({ event, context }) => {
-    context.addPropertyToken(event.params.proptoken);
-  },
-  {
-    preRegisterDynamicContracts: false,
+indexer.contractRegister(
+  { contract: "PropertyFactory", event: "NewPropToken" },
+  async ({ event, context }) => {
+    context.chain.PropertyToken.add(event.params.proptoken);
   }
 );
 
-PropertyFactory.NewPropToken.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyFactory", event: "NewPropToken" },
+  async ({ event, context }) => {
   const cpWallet = await context.Wallet.getOrThrow(
     `${event.chainId}-${event.params.certifiedPartner}`,
     'PropertyFactory.NewPropToken.handler: Wallet not found'
@@ -34,4 +34,5 @@ PropertyFactory.NewPropToken.handler(async ({ event, context }) => {
     createdAtBlock: event.block.number,
     creationTransaction: event.transaction.hash,
   });
-});
+}
+);

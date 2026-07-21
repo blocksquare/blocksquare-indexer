@@ -1,14 +1,9 @@
 import { getAddress } from 'ethers';
-import {
-  BigDecimal,
-  PropertyStakingPoolPosition,
-  PropertyStakingPoolRecord,
-  TokenDeposit,
-} from 'generated';
+import { BigDecimal, PropertyStakingPoolPosition, PropertyStakingPoolRecord, TokenDeposit } from "envio";
 
 import { getDay, getHour } from './date';
 import { getLoadedConfig } from '../config';
-import { PropertyStakingPool } from 'generated/src/Types.gen';
+import { type PropertyStakingPool } from "envio";
 import { PropertyStakingPoolType } from '../types/enums';
 export const getNewPropertyStakingPool = (
   chainId: number,
@@ -41,7 +36,6 @@ export const getNewTokenDeposit = (
     stakedValue: 0n,
   };
 };
-
 
 export const getNewPropertyStakingPoolPosition = (
   chainId: number,

@@ -1,4 +1,4 @@
-import { PropertyTokenTradeCounts } from 'generated';
+import { PropertyTokenTradeCounts } from "envio";
 import {getAddress} from "ethers";
 
 /**

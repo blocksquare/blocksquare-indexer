@@ -1,10 +1,12 @@
-import { PropertyRevenueDistribution } from 'generated';
+import { indexer, PropertyRevenueDistribution } from "envio";
 import { getNewPropertyTokenRevenue } from '../helper/PropertyTokenRevenue';
 import { getNewPropertyTokenRevenueDistribution } from '../helper/PropertyTokenRevenueDistribution';
 import { getNewPropertyTokenRevenueClaim } from '../helper/PropertyTokenRevenueClaim';
 import { getAPY } from '../helper/APYCalculation';
 
-PropertyRevenueDistribution.RevenueAdded.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyRevenueDistribution", event: "RevenueAdded" },
+  async ({ event, context }) => {
   const propertyId = `${event.chainId}-${event.params.property}`;
 
   const [propertyTokenRevenueDistributionsLoaded, propertyTokenRecordsLoaded, propertyTokenLoaded] = await Promise.all([
@@ -26,7 +28,6 @@ PropertyRevenueDistribution.RevenueAdded.handler(async ({ event, context }) => {
       propertyTokenRevenues[user] = revenue;
       return propertyTokenRevenues;
   }, {} as { [key: string]: any });
-
 
     // There can be multiple entries for the same user. We need to aggregate all the amounts for the same user.
     const aggregatedPendingRevenues = event.params.users.reduce<Record<string, bigint>>((acc, user, index) => {
@@ -70,9 +71,12 @@ PropertyRevenueDistribution.RevenueAdded.handler(async ({ event, context }) => {
           apy: allTimeAPY,
           currentYearApy: currentYearAPY,
       });
-});
+}
+);
 
-PropertyRevenueDistribution.RevenueClaimed.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyRevenueDistribution", event: "RevenueClaimed" },
+  async ({ event, context }) => {
   // Skip if amount is 0
   if (event.params.amount === 0n) return;
 
@@ -103,4 +107,5 @@ PropertyRevenueDistribution.RevenueClaimed.handler(async ({ event, context }) =>
     );
 
     context.PropertyTokenRevenueClaim.set(revenueClaim);
-});
+}
+);

@@ -1,4 +1,4 @@
-import { CertifiedPartner } from 'generated';
+import { CertifiedPartner } from "envio";
 
 export const getNewCertifiedPartner = (
   chainId: number,

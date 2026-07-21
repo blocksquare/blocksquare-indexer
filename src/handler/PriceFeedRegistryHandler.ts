@@ -8,7 +8,7 @@ import {
   CHAINLINK_USD_ADDRESS,
 } from '../helper/constants';
 
-import { PriceFeedRegistry } from 'generated';
+import { indexer, PriceFeedRegistry } from "envio";
 
 // Map of base addresses to their asset symbols (all paired with USD)
 const USD_PAIR_MAPPINGS: Record<string, string> = {
@@ -29,19 +29,19 @@ const getUsdAssetPairId = (base: string, denomination: string): string | null =>
   return baseSymbol ? `${baseSymbol}/USD` : null;
 };
 
-PriceFeedRegistry.FeedConfirmed.contractRegister(
+indexer.contractRegister(
+  { contract: "PriceFeedRegistry", event: "FeedConfirmed" },
   async ({ event, context }) => {
     // Only register aggregator if it's a USD pair we're tracking
     if (getUsdAssetPairId(event.params.asset, event.params.denomination)) {
-      context.addPriceDataFeed(event.params.latestAggregator);
+      context.chain.PriceDataFeed.add(event.params.latestAggregator);
     }
-  },
-  {
-    preRegisterDynamicContracts: false,
   }
 );
 
-PriceFeedRegistry.FeedConfirmed.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PriceFeedRegistry", event: "FeedConfirmed" },
+  async ({ event, context }) => {
   const assetPairId = getUsdAssetPairId(event.params.asset, event.params.denomination);
 
   if (!assetPairId) return;
@@ -58,4 +58,5 @@ PriceFeedRegistry.FeedConfirmed.handler(async ({ event, context }) => {
     ...assetPair,
     latestAggregatorAddress: event.params.latestAggregator,
   });
-});
+}
+);

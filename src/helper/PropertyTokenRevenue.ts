@@ -1,5 +1,5 @@
-import { PropertyTokenRevenue } from 'generated';
-import { PropertyToken } from 'generated/src/Types.gen';
+import { PropertyTokenRevenue } from "envio";
+import { type PropertyToken } from "envio";
 
 export const getNewPropertyTokenRevenue = (
   propertyToken: PropertyToken,

@@ -1,4 +1,4 @@
-import { PropertyTokenRevenueDistribution } from 'generated';
+import { PropertyTokenRevenueDistribution } from "envio";
 import { formatUnits } from 'ethers';
 import dayjs from 'dayjs';
 import { PropertyTokenRevenueDistributionInterval } from '../types/config';

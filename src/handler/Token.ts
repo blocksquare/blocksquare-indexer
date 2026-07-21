@@ -1,4 +1,4 @@
-import { BlocksquareToken } from 'generated';
+import { indexer, BlocksquareToken } from "envio";
 
 import { ZeroAddress, formatUnits } from 'ethers';
 import {
@@ -7,10 +7,12 @@ import {
   getTokenRecord,
 } from '../helper/Token';
 import { DEAD_ADDRESS } from '../helper/constants';
-import { BigDecimal } from 'generated';
+import { indexer, BigDecimal } from "envio";
 import { formatTo8Decimals } from '../helper/format';
 
-BlocksquareToken.Transfer.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "BlocksquareToken", event: "Transfer" },
+  async ({ event, context }) => {
     // Skip if value is zero
     if (event.params._amount === 0n) return;
 
@@ -103,4 +105,5 @@ BlocksquareToken.Transfer.handler(async ({ event, context }) => {
     context.TokenRecord.set(
       getTokenRecord(tokenUpdated, event.block.timestamp)
     );
-});
+}
+);

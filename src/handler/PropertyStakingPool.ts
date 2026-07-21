@@ -1,4 +1,4 @@
-import { PropertyStakingPool } from 'generated';
+import { indexer, PropertyStakingPool } from "envio";
 import {
   calculatePropertyPoolRatio,
   getNewPropertyStakingPool,
@@ -9,7 +9,9 @@ import {
 import { getNewWallet } from '../helper/Wallet';
 import { BIGINT_100K, WEI_DECIMALS } from '../helper/constants';
 
-PropertyStakingPool.Deposit.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyStakingPool", event: "Deposit" },
+  async ({ event, context }) => {
   const valuationAddress = getValuationAddressForPropertyStakingPool(
     event.srcAddress
   );
@@ -26,7 +28,6 @@ PropertyStakingPool.Deposit.handler(async ({ event, context }) => {
       loadedStakingPool ??
       getNewPropertyStakingPool(event.chainId, event.srcAddress);
 
-
     const valuePerBSPT = tokenInformation.valuation / BIGINT_100K;
     // When multiplying two amounts in WEI (resulting in a value scaled by 10^36), we need to divide by 10^18 to scale it back to the original value.
     const depositTVL = (valuePerBSPT * event.params.inAmount) / WEI_DECIMALS;
@@ -38,8 +39,6 @@ PropertyStakingPool.Deposit.handler(async ({ event, context }) => {
       ratio: calculatePropertyPoolRatio(stakingPool),
       tvl: stakingPool.tvl + depositTVL
     };
-
-
 
     let stakingPoolPosition = await context.PropertyStakingPoolPosition.get(
       `${event.chainId}-${event.params.owner}-${event.srcAddress}`
@@ -59,7 +58,6 @@ PropertyStakingPool.Deposit.handler(async ({ event, context }) => {
         tokenInformation.id
       );
     }
-
 
     // When multiplying two amounts in WEI (resulting in a value scaled by 10^36), we need to divide by 10^18 to scale it back to the original value.
     const depositValue = (valuePerBSPT * event.params.inAmount) / WEI_DECIMALS;
@@ -103,9 +101,12 @@ PropertyStakingPool.Deposit.handler(async ({ event, context }) => {
     };
 
     context.TokenDeposit.set(tokenDeposit);
-});
+}
+);
 
-PropertyStakingPool.Withdraw.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyStakingPool", event: "Withdraw" },
+  async ({ event, context }) => {
   // Edge case: Some users attempt zero-value withdrawals without having any token balance
   // Example TX: 0x1e546e039bf5e32b0f223ffb19dcfac10d8d714b5b3fc35f0da20602d71641ea
   if (event.params.inAmount === 0n) return;
@@ -152,7 +153,6 @@ PropertyStakingPool.Withdraw.handler(async ({ event, context }) => {
       tvl: stakingPool.tvl - withdrawTVL
     };
 
-
     const withdrawValue = tokenDeposit.stakedValue;
 
     const newSAmount = stakingPoolPosition.totalIssuedAmount - event.params.inAmount;
@@ -178,9 +178,12 @@ PropertyStakingPool.Withdraw.handler(async ({ event, context }) => {
 
     // Remove token deposit
     context.TokenDeposit.deleteUnsafe(tokenDeposit.id);
-});
+}
+);
 
-PropertyStakingPool.Reward.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyStakingPool", event: "Reward" },
+  async ({ event, context }) => {
   // Unlike the withdraw, we can have a case where we have no staking pool object yet
   const stakingPool = await context.PropertyStakingPool.getOrCreate(
     getNewPropertyStakingPool(event.chainId, event.srcAddress)
@@ -196,4 +199,5 @@ PropertyStakingPool.Reward.handler(async ({ event, context }) => {
   context.PropertyStakingPoolRecord.set(
     getPropertyStakingPoolRecord(newStakingPoolData, event.block.timestamp)
   );
-});
+}
+);

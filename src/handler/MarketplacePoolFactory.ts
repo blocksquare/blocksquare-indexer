@@ -1,16 +1,15 @@
-import { MarketplacePoolFactory } from 'generated';
+import { indexer, MarketplacePoolFactory } from "envio";
 import { getNewMarketplacePool } from '../helper/MarketplacePool';
 
-MarketplacePoolFactory.MarketplacePoolCreated.contractRegister(
-  ({ event, context }) => {
-    context.addMarketplacePool(event.params.marketplacePoolAddress);
-  },
-  {
-    preRegisterDynamicContracts: false,
+indexer.contractRegister(
+  { contract: "MarketplacePoolFactory", event: "MarketplacePoolCreated" },
+  async ({ event, context }) => {
+    context.chain.MarketplacePool.add(event.params.marketplacePoolAddress);
   }
 );
 
-MarketplacePoolFactory.MarketplacePoolCreated.handler(
+indexer.onEvent(
+  { contract: "MarketplacePoolFactory", event: "MarketplacePoolCreated" },
   async ({ event, context }) => {
     /*  const cpWallet = context.Wallet.get(
       `${event.chainId}-${event.params.cpWallet}`

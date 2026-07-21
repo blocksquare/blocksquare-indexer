@@ -1,11 +1,13 @@
-import { MarketplacePool } from 'generated';
+import { indexer, MarketplacePool } from "envio";
 import {
   getMarketplacePoolRecord,
   getNewMarketplacePoolPosition,
 } from '../helper/MarketplacePool';
 import { getNewWallet } from '../helper/Wallet';
 
-MarketplacePool.CPInitialized.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MarketplacePool", event: "CPInitialized" },
+  async ({ event, context }) => {
   const marketplacePool = await context.MarketplacePool.getOrThrow(
     `${event.chainId}-${event.srcAddress}`,
     'MarketplacePool.CPInitialized.handler: MarketplacePool not found'
@@ -36,9 +38,12 @@ MarketplacePool.CPInitialized.handler(async ({ event, context }) => {
     context.MarketplacePoolRecord.set(
       getMarketplacePoolRecord(marketplacePoolUpdated, event.block.timestamp)
     );
-});
+}
+);
 
-MarketplacePool.Deposit.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MarketplacePool", event: "Deposit" },
+  async ({ event, context }) => {
   const [marketplacePool, marketplacePoolPosition] = await Promise.all([
     context.MarketplacePool.getOrThrow(
       `${event.chainId}-${event.srcAddress}`,
@@ -82,9 +87,12 @@ MarketplacePool.Deposit.handler(async ({ event, context }) => {
         finalMarketplacePoolPosition.stakedAmount + event.params.inAmount,
       vAmount: finalMarketplacePoolPosition.vAmount + event.params.outAmount,
     });
-});
+}
+);
 
-MarketplacePool.Withdraw.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MarketplacePool", event: "Withdraw" },
+  async ({ event, context }) => {
   const [marketplacePool, marketplacePoolPosition] = await Promise.all([
     context.MarketplacePool.getOrThrow(
       `${event.chainId}-${event.srcAddress}`,
@@ -117,9 +125,12 @@ MarketplacePool.Withdraw.handler(async ({ event, context }) => {
       vAmount: marketplacePoolPosition.vAmount - event.params.inAmount,
       rewards: marketplacePoolPosition.rewards + event.params.reward,
     });
-});
+}
+);
 
-MarketplacePool.CPCanWithdraw.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MarketplacePool", event: "CPCanWithdraw" },
+  async ({ event, context }) => {
   const marketplacePool = await context.MarketplacePool.getOrThrow(
     `${event.chainId}-${event.srcAddress}`,
     'MarketplacePool.CPCanWithdraw.handler: MarketplacePool not found'
@@ -129,9 +140,12 @@ MarketplacePool.CPCanWithdraw.handler(async ({ event, context }) => {
       ...marketplacePool,
       certifiedPartnerCanWithdraw: true,
     });
-});
+}
+);
 
-MarketplacePool.Capped.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MarketplacePool", event: "Capped" },
+  async ({ event, context }) => {
   const marketplacePool = await context.MarketplacePool.getOrThrow(
     `${event.chainId}-${event.srcAddress}`,
     'MarketplacePool.Capped.handler: MarketplacePool not found'
@@ -142,9 +156,12 @@ MarketplacePool.Capped.handler(async ({ event, context }) => {
       capped: true,
       lockedUntil: Number(event.params.lockEnd),
     });
-});
+}
+);
 
-MarketplacePool.Reward.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MarketplacePool", event: "Reward" },
+  async ({ event, context }) => {
   const marketplacePool = await context.MarketplacePool.getOrThrow(
     `${event.chainId}-${event.srcAddress}`,
     'MarketplacePool.Reward.handler: MarketplacePool not found'
@@ -160,9 +177,12 @@ MarketplacePool.Reward.handler(async ({ event, context }) => {
     context.MarketplacePoolRecord.set(
       getMarketplacePoolRecord(marketplacePoolUpdated, event.block.timestamp)
     );
-});
+}
+);
 
-MarketplacePool.LockExtended.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MarketplacePool", event: "LockExtended" },
+  async ({ event, context }) => {
   const marketplacePool = await context.MarketplacePool.getOrThrow(
     `${event.chainId}-${event.srcAddress}`,
     'MarketplacePool.LockExtended.handler: MarketplacePool not found'
@@ -172,9 +192,12 @@ MarketplacePool.LockExtended.handler(async ({ event, context }) => {
       ...marketplacePool,
       lockPeriod: marketplacePool.lockPeriod + Number(event.params.extension),
     });
-});
+}
+);
 
-MarketplacePool.LiquidateCPCollateral.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MarketplacePool", event: "LiquidateCPCollateral" },
+  async ({ event, context }) => {
   const marketplacePool = await context.MarketplacePool.getOrThrow(
     `${event.chainId}-${event.srcAddress}`,
     'MarketplacePool.LiquidateCPCollateral.handler: MarketplacePool not found'
@@ -192,9 +215,12 @@ MarketplacePool.LiquidateCPCollateral.handler(async ({ event, context }) => {
     context.MarketplacePoolRecord.set(
       getMarketplacePoolRecord(marketplacePoolUpdated, event.block.timestamp)
     );
-});
+}
+);
 
-MarketplacePool.PoolCampaignConfigured.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "MarketplacePool", event: "PoolCampaignConfigured" },
+  async ({ event, context }) => {
   const marketplacePool = await context.MarketplacePool.getOrThrow(
     `${event.chainId}-${event.srcAddress}`,
     'MarketplacePool.PoolCampaignConfigured.handler: MarketplacePool not found'
@@ -206,4 +232,5 @@ MarketplacePool.PoolCampaignConfigured.handler(async ({ event, context }) => {
       startTime: Number(event.params.startTime),
       duration: Number(event.params.duration),
     });
-});
+}
+);

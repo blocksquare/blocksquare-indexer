@@ -1,5 +1,5 @@
 import { formatUnits, parseUnits } from 'ethers';
-import { BigDecimal } from 'generated';
+import { BigDecimal } from "envio";
 
 // We want to cut it to the same precision as the chainlink oracles to be consistent
 // parseUnits handles decimals correctly. Therefore we use it.

@@ -1,18 +1,27 @@
-import { LiquidityStakingPool } from 'generated';
+import { indexer, LiquidityStakingPool } from "envio";
 import {
   StakingDepositHandler,
   StakingWithdrawHandler,
   StakingRewardHandler,
 } from '../helper/StakingPool';
 
-LiquidityStakingPool.Deposit.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "LiquidityStakingPool", event: "Deposit" },
+  async ({ event, context }) => {
   await StakingDepositHandler(event, context);
-});
+}
+);
 
-LiquidityStakingPool.Withdraw.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "LiquidityStakingPool", event: "Withdraw" },
+  async ({ event, context }) => {
   await StakingWithdrawHandler(event, context);
-});
+}
+);
 
-LiquidityStakingPool.Reward.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "LiquidityStakingPool", event: "Reward" },
+  async ({ event, context }) => {
   await StakingRewardHandler(event, context);
-});
+}
+);

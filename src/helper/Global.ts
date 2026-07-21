@@ -1,6 +1,6 @@
-import { Global, GlobalRecord } from 'generated';
+import { Global, GlobalRecord } from "envio";
 import { getDay, getHour } from './date';
-import { PropertyToken } from 'generated/src/Types.gen';
+import { type PropertyToken } from "envio";
 
 export const getGlobalRecord = (
   global: Global,

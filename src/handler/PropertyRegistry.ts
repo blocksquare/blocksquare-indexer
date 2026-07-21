@@ -1,4 +1,4 @@
-import { PropertyRegistry } from 'generated';
+import { indexer, PropertyRegistry } from "envio";
 import { iso1A2Code } from '@rapideditor/country-coder';
 import {
   getPropertyTokenRecord,
@@ -10,7 +10,9 @@ import {
   updateGlobalPropertiesCountAndValuation,
 } from '../helper/Global';
 
-PropertyRegistry.IPFSHashChanged.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyRegistry", event: "IPFSHashChanged" },
+  async ({ event, context }) => {
   const propertyTokenLoaded = await context.PropertyToken.get(
     `${event.chainId}-${event.params.property}`
   );
@@ -21,9 +23,12 @@ PropertyRegistry.IPFSHashChanged.handler(async ({ event, context }) => {
       ipfs: event.params.newIPFSHash,
     });
   }
-});
+}
+);
 
-PropertyRegistry.NameAndSymbolChange.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyRegistry", event: "NameAndSymbolChange" },
+  async ({ event, context }) => {
   const propertyTokenLoaded = await context.PropertyToken.get(
     `${event.chainId}-${event.params.property}`
   );
@@ -34,10 +39,12 @@ PropertyRegistry.NameAndSymbolChange.handler(async ({ event, context }) => {
       symbol: event.params.newSymbol,
     });
   }
-});
+}
+);
 
 // Todo at historic data tracking
-PropertyRegistry.PropertyBasicInfoChanged.handler(
+indexer.onEvent(
+  { contract: "PropertyRegistry", event: "PropertyBasicInfoChanged" },
   async ({ event, context }) => {
     const [activeProperties, global, propertyTokenLoaded] = await Promise.all([
       context.PropertyToken.getWhere.propertyValuation.gt(0n),
@@ -97,7 +104,9 @@ PropertyRegistry.PropertyBasicInfoChanged.handler(
   }
 );
 
-PropertyRegistry.PropertyInfoAdded.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyRegistry", event: "PropertyInfoAdded" },
+  async ({ event, context }) => {
   const propertyTokenLoaded = await context.PropertyToken.get(
     `${event.chainId}-${event.params.property}`
   );
@@ -110,9 +119,12 @@ PropertyRegistry.PropertyInfoAdded.handler(async ({ event, context }) => {
       buildingPart: Number(event.params.buildingPart),
     });
   }
-});
+}
+);
 
-PropertyRegistry.PropertyInfoChanged.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyRegistry", event: "PropertyInfoChanged" },
+  async ({ event, context }) => {
   const propertyTokenLoaded = await context.PropertyToken.get(
     `${event.chainId}-${event.params.property}`
   );
@@ -125,9 +137,12 @@ PropertyRegistry.PropertyInfoChanged.handler(async ({ event, context }) => {
       buildingPart: Number(event.params.buildingPart),
     });
   }
-});
+}
+);
 
-PropertyRegistry.PropertyValuationChange.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyRegistry", event: "PropertyValuationChange" },
+  async ({ event, context }) => {
   const [activeProperties, global, propertyTokenLoaded] = await Promise.all([
     context.PropertyToken.getWhere.propertyValuation.gt(0n),
     context.Global.getOrCreate(INITIAL_GLOBAL_ENTITY),
@@ -166,9 +181,12 @@ PropertyRegistry.PropertyValuationChange.handler(async ({ event, context }) => {
   context.GlobalRecord.set(
     getGlobalRecord(globalUpdated, event.block.timestamp)
   );
-});
+}
+);
 
-PropertyRegistry.TokenValuationChange.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyRegistry", event: "TokenValuationChange" },
+  async ({ event, context }) => {
   const propertyTokenLoaded = await context.PropertyToken.getOrThrow(
     `${event.chainId}-${event.params.property}`
   );
@@ -187,4 +205,5 @@ PropertyRegistry.TokenValuationChange.handler(async ({ event, context }) => {
   context.PropertyTokenRecord.set(
     getPropertyTokenRecord(propertyTokenUpdated, event.block.timestamp)
   );
-});
+}
+);

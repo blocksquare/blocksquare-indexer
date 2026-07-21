@@ -1,9 +1,11 @@
-import { PropertyTokenInvestment, PropertyTokenOffering } from 'generated';
+import { indexer, PropertyTokenInvestment, PropertyTokenOffering } from "envio";
 
 import { THREE_DAYS_IN_SECONDS } from '../helper/constants';
-import { PropertyTokenOffering as PropertyTokenOfferingType } from 'generated/src/Types.gen';
+import { type PropertyTokenOffering } from "envio";
 
-PropertyTokenOffering.InitialOffer.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOffering", event: "InitialOffer" },
+  async ({ event, context }) => {
   const property = await context.PropertyToken.getOrThrow(
     `${event.chainId}-${event.params.property}`,
     'PropertyTokenOffering.InitialOffer: Property not found'
@@ -36,9 +38,11 @@ PropertyTokenOffering.InitialOffer.handler(async ({ event, context }) => {
     ...property,
     latestOffering_id: newPropertyTokenOffering.id,
   });
-});
+}
+);
 
-PropertyTokenOffering.InitialOfferingCanceled.handler(
+indexer.onEvent(
+  { contract: "PropertyTokenOffering", event: "InitialOfferingCanceled" },
   async ({ event, context }) => {
     const property = await context.PropertyToken.getOrThrow(
       `${event.chainId}-${event.params.property}`,
@@ -58,7 +62,9 @@ PropertyTokenOffering.InitialOfferingCanceled.handler(
   }
 );
 
-PropertyTokenOffering.Invested.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOffering", event: "Invested" },
+  async ({ event, context }) => {
   const wallet = await context.Wallet.getOrThrow(
     `${event.chainId}-${event.params.wallet}`,
     'PropertyTokenOffering.Invested: Wallet not found'
@@ -77,9 +83,12 @@ PropertyTokenOffering.Invested.handler(async ({ event, context }) => {
   };
 
   context.PropertyTokenInvestment.set(propertyInvestment);
-});
+}
+);
 
-PropertyTokenOffering.ClaimInvestment.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOffering", event: "ClaimInvestment" },
+  async ({ event, context }) => {
   //property, collected, fee
   const property = await context.PropertyToken.getOrThrow(
     `${event.chainId}-${event.params.property}`,
@@ -95,9 +104,11 @@ PropertyTokenOffering.ClaimInvestment.handler(async ({ event, context }) => {
     ...propertyTokenOffering,
     status: 'finished',
   });
-});
+}
+);
 
-PropertyTokenOffering.ReturnedPresaleInvestment.handler(
+indexer.onEvent(
+  { contract: "PropertyTokenOffering", event: "ReturnedPresaleInvestment" },
   async ({ event, context }) => {
     const property = await context.PropertyToken.getOrThrow(
       `${event.chainId}-${event.params.property}`,
@@ -117,7 +128,9 @@ PropertyTokenOffering.ReturnedPresaleInvestment.handler(
   }
 );
 
-PropertyTokenOffering.ReturnedInvestment.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "PropertyTokenOffering", event: "ReturnedInvestment" },
+  async ({ event, context }) => {
   const property = await context.PropertyToken.getOrThrow(
     `${event.chainId}-${event.params.property}`,
     'PropertyTokenOffering.ReturnedInvestment: property not found'
@@ -132,4 +145,5 @@ PropertyTokenOffering.ReturnedInvestment.handler(async ({ event, context }) => {
     ...propertyTokenOffering,
     status: 'failed',
   });
-});
+}
+);
