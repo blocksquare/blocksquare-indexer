@@ -1,4 +1,4 @@
-import { OceanpointValuation } from 'generated';
+import { indexer, OceanpointValuation } from "envio";
 import { getNewOceanpointTokenInformation } from '../helper/OceanpointTokenValuation';
 import {
   getStakingPoolAddressFromValuationAddress,
@@ -6,7 +6,9 @@ import {
 } from '../helper/PropertyStakingPool';
 import { BIGINT_100K } from '../helper/constants';
 
-OceanpointValuation.ValuationUpdate.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "OceanpointValuation", event: "ValuationUpdate" },
+  async ({ event, context }) => {
   const stakingPoolAdddress = getStakingPoolAddressFromValuationAddress(event.srcAddress);
 
   const stakingPoolType = getStakingPoolTypeFromValuationAddress(event.srcAddress);
@@ -30,9 +32,12 @@ OceanpointValuation.ValuationUpdate.handler(async ({ event, context }) => {
     valuePerBSPT,
     propertyStakingPoolType: stakingPoolType,
   });
-});
+}
+);
 
-OceanpointValuation.APYUpdate.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "OceanpointValuation", event: "APYUpdate" },
+  async ({ event, context }) => {
   const stakingPoolAdddress = getStakingPoolAddressFromValuationAddress(event.srcAddress);
 
   const stakingPoolType = getStakingPoolTypeFromValuationAddress(event.srcAddress);
@@ -52,4 +57,5 @@ OceanpointValuation.APYUpdate.handler(async ({ event, context }) => {
     apy: event.params.newAPY,
     propertyStakingPoolType: stakingPoolType,
   });
-});
+}
+);

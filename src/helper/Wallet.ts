@@ -1,4 +1,4 @@
-import {handlerContext, Wallet} from 'generated';
+import { EvmOnEventContext, Wallet } from "envio";
 
 export const getNewWallet = (chainId: number, walletAddress: string): Wallet => {
   return {
@@ -10,7 +10,7 @@ export const getNewWallet = (chainId: number, walletAddress: string): Wallet => 
   };
 };
 
-export const ensureWallet = async (context: handlerContext, chainId: number, address: string) => {
+export const ensureWallet = async (context: EvmOnEventContext, chainId: number, address: string) => {
   const walletId = `${chainId}-${address}`;
   const wallet = await context.Wallet.get(walletId);
   if (!wallet) {

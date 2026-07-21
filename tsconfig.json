@@ -1,17 +1,22 @@
 {
   "compilerOptions": {
-    "target": "esnext",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
-    "lib": ["esnext"],
-    "allowJs": true,
-    "checkJs": false,
-    "outDir": "build",
-    "rootDirs": ["src", "generated"],
-    "strict": true,
-    "noImplicitAny": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "es2022",
+    "allowJs": true,
     "resolveJsonModule": true,
-    "skipLibCheck": true
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "strict": false,
+    "noImplicitOverride": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "lib": [
+      "es2022"
+    ],
+    "types": [
+      "node"
+    ]
   }
 }

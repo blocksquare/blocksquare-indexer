@@ -1,4 +1,4 @@
-import { BigDecimal, UniswapPoolV2, onBlock } from 'generated';
+import { indexer, BigDecimal, UniswapPoolV2 } from "envio";
 import { getLoadedConfig } from '../config';
 import { formatTo8Decimals } from '../helper/format';
 import { ZeroAddress } from 'ethers';
@@ -15,7 +15,9 @@ const addressToPool = Object.fromEntries(
   Object.entries(config.uniswapPoolContracts).map(([pairId, c]) => [c.address, { pairId, ...c }]),
 );
 
-UniswapPoolV2.Swap.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "UniswapPoolV2", event: "Swap" },
+  async ({ event, context }) => {
   const [ethUSDAssetPair, bstUSDAssetPair] = await Promise.all([
     context.AssetPair.get('ETH/USD'),
     context.AssetPair.get('BST/USD'),
@@ -82,10 +84,13 @@ UniswapPoolV2.Swap.handler(async ({ event, context }) => {
       }
     }
   }
-});
+}
+);
 
 // Track LP token total supply via mint (from=0x0) and burn (to=0x0) transfers
-UniswapPoolV2.Transfer.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "UniswapPoolV2", event: "Transfer" },
+  async ({ event, context }) => {
   const isMint = event.params.from === ZeroAddress;
   const isBurn = event.params.to === ZeroAddress;
   if (!isMint && !isBurn) return;
@@ -103,10 +108,13 @@ UniswapPoolV2.Transfer.handler(async ({ event, context }) => {
       ? pool.totalSupply + event.params.value
       : pool.totalSupply - event.params.value,
   });
-});
+}
+);
 
 // On every reserve change, compute and store LP token price in USD
-UniswapPoolV2.Sync.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "UniswapPoolV2", event: "Sync" },
+  async ({ event, context }) => {
   const poolCfg = addressToPool[event.srcAddress];
   if (!poolCfg) return;
 
@@ -134,11 +142,12 @@ UniswapPoolV2.Sync.handler(async ({ event, context }) => {
   );
   context.AssetPairPrice.set(assetPairPrice);
   context.AssetPair.set(assetPair);
-});
+}
+);
 
 // Recalculate LP price every ~1 hour using latest USD asset pair prices,
 // so AssetPairPrice stays current even when no Sync event fires for extended periods.
-onBlock(
+indexer.onBlock(
   { name: 'HourlyLPPriceUpdate', chain: 1, interval: 300 },
   async ({ block, context }) => {
     if (context.isPreload) return;

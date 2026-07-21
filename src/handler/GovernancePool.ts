@@ -1,5 +1,5 @@
 import { ZeroAddress } from 'ethers';
-import { GovernancePool } from 'generated';
+import { indexer, GovernancePool } from "envio";
 import {
   getNewStakingPoolPosition,
   StakingDepositHandler,
@@ -8,15 +8,23 @@ import {
 } from '../helper/StakingPool';
 import { getNewWallet } from '../helper/Wallet';
 
-GovernancePool.Deposit.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "GovernancePool", event: "Deposit" },
+  async ({ event, context }) => {
   await StakingDepositHandler(event, context);
-});
+}
+);
 
-GovernancePool.Withdraw.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "GovernancePool", event: "Withdraw" },
+  async ({ event, context }) => {
   await StakingWithdrawHandler(event, context);
-});
+}
+);
 
-GovernancePool.Transfer.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "GovernancePool", event: "Transfer" },
+  async ({ event, context }) => {
   // Skip if value is zero
   if (event.params.value === 0n) return;
   // Skip if from or two is zero address. This is handled by the deposit / withdraw already
@@ -57,8 +65,12 @@ GovernancePool.Transfer.handler(async ({ event, context }) => {
     chainId: event.chainId,
     issuedAmount: toPoolPosition.issuedAmount + event.params.value,
   });
-});
+}
+);
 
-GovernancePool.Reward.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "GovernancePool", event: "Reward" },
+  async ({ event, context }) => {
   await StakingRewardHandler(event, context);
-});
+}
+);

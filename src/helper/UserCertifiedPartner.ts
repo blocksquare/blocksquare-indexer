@@ -1,4 +1,4 @@
-import { UserCertifiedPartner } from 'generated';
+import { UserCertifiedPartner } from "envio";
 
 export const getNewUserCertifiedPartner = (
   chainId: number,

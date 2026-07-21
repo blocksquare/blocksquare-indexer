@@ -1,6 +1,6 @@
-import { PropertyTokenHolder, PropertyTokenRecord } from 'generated';
+import { PropertyTokenHolder, PropertyTokenRecord } from "envio";
 import { getDay, getHour } from './date';
-import { PropertyToken } from 'generated/src/Types.gen';
+import { type PropertyToken } from "envio";
 
 export const MOCK_PROPERTY_ADDRESS = '0x489632e4953c0EeE5E327dc1527838d7E9B5dD32';
 

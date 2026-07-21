@@ -1,6 +1,6 @@
-import { MarketplacePoolPosition, MarketplacePoolRecord } from 'generated';
+import { MarketplacePoolPosition, MarketplacePoolRecord } from "envio";
 import { getDay, getHour } from './date';
-import { MarketplacePool } from 'generated/src/Types.gen';
+import { type MarketplacePool } from "envio";
 
 export const getNewMarketplacePool = (
   chainId: number,

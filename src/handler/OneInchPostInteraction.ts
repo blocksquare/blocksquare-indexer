@@ -1,4 +1,4 @@
-import { OneInchPostInteraction } from 'generated';
+import { indexer, OneInchPostInteraction } from "envio";
 import {
   ORDER_STRUCT_INDEX,
   uint256ToAddress,
@@ -6,7 +6,9 @@ import {
 } from '../helper/LimitOrderTrades';
 import { LimitOrderProtocol } from '../types/enums';
 
-OneInchPostInteraction.PostInteractionOrderFilled.handler(async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "OneInchPostInteraction", event: "PostInteractionOrderFilled" },
+  async ({ event, context }) => {
   // Extract token addresses from the nested order struct (tuple array)
   // In 1inch, makerAsset and takerAsset are stored as uint256 (Address type)
   const makerToken = uint256ToAddress(event.params.order[ORDER_STRUCT_INDEX.MAKER_ASSET]);
@@ -67,4 +69,5 @@ OneInchPostInteraction.PostInteractionOrderFilled.handler(async ({ event, contex
 
   await updatePropertyTokenTradeCounts(context, event.chainId, maker, 'makerCount');
   await updatePropertyTokenTradeCounts(context, event.chainId, event.params.taker, 'takerCount');
-});
+}
+);
