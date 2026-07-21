@@ -17,7 +17,6 @@ indexer.onEvent(
     `${event.chainId}-${event.params.property}`
   );
   if (propertyTokenLoaded) {
-    Error;
     context.PropertyToken.set({
       ...propertyTokenLoaded,
       ipfs: event.params.newIPFSHash,
@@ -47,7 +46,7 @@ indexer.onEvent(
   { contract: "PropertyRegistry", event: "PropertyBasicInfoChanged" },
   async ({ event, context }) => {
     const [activeProperties, global, propertyTokenLoaded] = await Promise.all([
-      context.PropertyToken.getWhere.propertyValuation.gt(0n),
+      context.PropertyToken.getWhere({ propertyValuation: { _gt: 0n } }),
       context.Global.getOrCreate(INITIAL_GLOBAL_ENTITY),
       context.PropertyToken.get(`${event.chainId}-${event.params.property}`),
     ]);
@@ -144,7 +143,7 @@ indexer.onEvent(
   { contract: "PropertyRegistry", event: "PropertyValuationChange" },
   async ({ event, context }) => {
   const [activeProperties, global, propertyTokenLoaded] = await Promise.all([
-    context.PropertyToken.getWhere.propertyValuation.gt(0n),
+    context.PropertyToken.getWhere({ propertyValuation: { _gt: 0n } }),
     context.Global.getOrCreate(INITIAL_GLOBAL_ENTITY),
     context.PropertyToken.get(`${event.chainId}-${event.params.property}`),
   ]);
