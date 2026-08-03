@@ -44,7 +44,31 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "LPStakingInit" }, async 
     earlyRewardSlash,
   } = event.params;
 
-  const uniV4PoolEntityId = `${chainId}-${targetPoolKey.toString()}`;
+  // Uniswap V4 poolId = keccak256(abi.encode(PoolKey)). targetPoolKey is an
+  // indexed tuple: real logs carry only its keccak topic hash (= the poolId),
+  // while decoded forms (positional array or named object) need hashing here.
+  const poolKey: unknown = targetPoolKey;
+  let poolId: string;
+  if (typeof poolKey === 'string') {
+    poolId = poolKey;
+  } else {
+    const components = Array.isArray(poolKey)
+      ? poolKey
+      : [
+          targetPoolKey.currency0,
+          targetPoolKey.currency1,
+          targetPoolKey.fee,
+          targetPoolKey.tickSpacing,
+          targetPoolKey.hooks,
+        ];
+    poolId = ethers.keccak256(
+      ethers.AbiCoder.defaultAbiCoder().encode(
+        ['address', 'address', 'uint24', 'int24', 'address'],
+        components,
+      ),
+    );
+  }
+  const uniV4PoolEntityId = `${chainId}-${poolId}`;
 
   const exitsingUniV4Pool = await context.UniswapV4Pool.get(uniV4PoolEntityId);
 
@@ -59,7 +83,7 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "LPStakingInit" }, async 
         chainId,
         contractAddress,
         positionManager,
-        targetPoolKey: targetPoolKey.toString(),
+        targetPoolKey: poolId,
         minDays,
         maxDays,
         minBoost,

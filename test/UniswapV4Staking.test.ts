@@ -2,7 +2,7 @@ process.env.ENVIO_NETWORK = 'testnet';
 
 import { describe, it, beforeEach } from 'vitest';
 import { createTestIndexer, type TestIndexer, type TestIndexerProcessConfig } from 'envio';
-import { ZeroAddress } from 'ethers';
+import { AbiCoder, keccak256, ZeroAddress } from 'ethers';
 import { CHAIN_ID, addr } from './fixtures';
 
 type ChainSimulate = NonNullable<
@@ -24,13 +24,16 @@ const MINT_TX = `0x${'aa'.repeat(32)}`;
 const UNI_POSITION_ID = `${CHAIN_ID}-${MINT_TX}`;
 const STAKING_POSITION_ID = `${CHAIN_ID}-${ALICE}-${TOKEN_ID}`;
 
-// The handler keys the Uniswap pool by `${chainId}-${targetPoolKey.toString()}`.
-// The simulate framework delivers the indexed PoolKey tuple as a positional
-// array, so toString() yields the comma-joined members (see report: at runtime
-// an indexed tuple is only available as its keccak topic hash / V4 poolId).
-const TARGET_POOL_KEY_TUPLE = [ZERO, BST_ADDRESS, 3000n, 60n, ZERO] as const;
-const TARGET_POOL_KEY_STRING = TARGET_POOL_KEY_TUPLE.join(',');
-const UNI_POOL_ENTITY_ID = `${CHAIN_ID}-${TARGET_POOL_KEY_STRING}`;
+// Simulate delivers the indexed PoolKey tuple as a positional array;
+// the handler derives the pool entity id as keccak256(abi.encode(PoolKey)) — the V4 poolId.
+const TARGET_POOL_KEY = [ZERO, BST_ADDRESS, 3000n, 60n, ZERO] as const;
+const POOL_ID = keccak256(
+  AbiCoder.defaultAbiCoder().encode(
+    ['address', 'address', 'uint24', 'int24', 'address'],
+    [...TARGET_POOL_KEY],
+  ),
+);
+const UNI_POOL_ENTITY_ID = `${CHAIN_ID}-${POOL_ID}`;
 
 const lpStakingInitEvent = (
   overrides: { minDays?: bigint; logIndex?: number; blockNumber?: number } = {},
@@ -43,7 +46,7 @@ const lpStakingInitEvent = (
     transaction: { hash: `0x${'bb'.repeat(32)}` },
     params: {
       positionManager: POSITION_MANAGER_ADDRESS,
-      targetPoolKey: TARGET_POOL_KEY_TUPLE,
+      targetPoolKey: TARGET_POOL_KEY,
       minDays: overrides.minDays ?? 7n,
       maxDays: 365n,
       minBoost: 100n,
@@ -114,7 +117,7 @@ describe('UniswapV4Staking', () => {
     indexer.UniswapV4Pool.set({
       id: UNI_POOL_ENTITY_ID,
       chainId: CHAIN_ID,
-      poolId: `0x${'ab'.repeat(32)}`,
+      poolId: POOL_ID,
       currency0: ZERO,
       currency1: BST_ADDRESS,
       fee: 3000n,
@@ -139,7 +142,7 @@ describe('UniswapV4Staking', () => {
     const pool = await indexer.StakingPoolV4.getOrThrow(STAKING_POOL_ENTITY_ID);
     t.expect(pool.contractAddress).toBe(STAKING_ADDRESS);
     t.expect(pool.positionManager).toBe(POSITION_MANAGER_ADDRESS);
-    t.expect(pool.targetPoolKey).toBe(TARGET_POOL_KEY_STRING);
+    t.expect(pool.targetPoolKey).toBe(POOL_ID);
     t.expect(pool.minDays).toBe(7n);
     t.expect(pool.maxDays).toBe(365n);
     t.expect(pool.minBoost).toBe(100n);
