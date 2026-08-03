@@ -106,6 +106,11 @@ indexer.onEvent({ contract: 'PropertyToken', event: 'Transfer' }, async ({ event
   context.PropertyTokenRecord.set(
     getPropertyTokenRecord(propertyTokenUpdated, event.block.timestamp),
   );
+});
+
+// Transfer history log, derived purely from event data.
+indexer.onEvent({ contract: 'PropertyToken', event: 'Transfer' }, async ({ event, context }) => {
+  if (event.params.value === 0n || event.params.from === event.params.to) return;
 
   context.PropertyTokenTransfer.set({
     id: `${event.chainId}-${event.srcAddress}-${event.transaction.hash}-${event.logIndex}`,
@@ -118,8 +123,8 @@ indexer.onEvent({ contract: 'PropertyToken', event: 'Transfer' }, async ({ event
     transactionHash: event.transaction.hash,
     transactionIndex: event.transaction.transactionIndex,
     propertyToken_id: `${event.chainId}-${event.srcAddress}`,
-    from_id: `${event.chainId}-${transferFrom}`,
-    to_id: `${event.chainId}-${transferTo}`,
+    from_id: `${event.chainId}-${event.params.from}`,
+    to_id: `${event.chainId}-${event.params.to}`,
   });
 });
 

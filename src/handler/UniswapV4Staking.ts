@@ -330,14 +330,13 @@ indexer.onBlock(
     );
     if (!uniV4Pool) return;
 
-    // Fetch all staked positions for this pool and filter out closed ones.
-    const allStakedPositions =
+    // Fetch all open staked positions for this pool in a single multi-field query.
+    const activeStakedPositions = (
       await context.StakingPoolV4Position.getWhere({
         pool_id: { _eq: STAKING_POOL_ENTITY_ID },
-      });
-    const activeStakedPositions = allStakedPositions
-      .filter((p) => !p.isPositionClosed)
-      .sort((a, b) => a.updatedAtTimestamp - b.updatedAtTimestamp);
+        isPositionClosed: { _eq: false },
+      })
+    ).sort((a, b) => a.updatedAtTimestamp - b.updatedAtTimestamp);
     if (activeStakedPositions.length === 0) return;
 
     const uniPositions = await context.UniswapV4PoolPosition.getWhere({

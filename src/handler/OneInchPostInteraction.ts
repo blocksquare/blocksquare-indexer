@@ -1,5 +1,6 @@
 import { indexer } from 'envio';
 import { uint256ToAddress, updatePropertyTokenTradeCounts } from '../helper/LimitOrderTrades';
+import { resolveReferral } from '../helper/Referral';
 import { LimitOrderProtocol } from '../types/enums';
 
 indexer.onEvent(
@@ -28,39 +29,8 @@ indexer.onEvent(
 
     const tradeId = `${event.chainId}-${propertyToken.contractAddress}-${event.transaction.hash}-${event.logIndex}`;
     const buyerWalletId = `${event.chainId}-${event.params.taker}`;
-    const marketplaceId = propertyToken.certifiedPartner_id;
 
-    const extraData = event.params.extraData;
-    const hasValidExtraData = extraData && extraData.length === 66;
-
-    let validReferralCode = '';
-
-    if (hasValidExtraData) {
-      const userBytes = extraData.slice(2);
-      const referrerUserId = `${event.chainId}-${userBytes}`;
-      const referralId = `${event.chainId}-${marketplaceId}-${event.params.taker}`;
-
-      const [referrerUser, buyerWalletEntity, existingReferral] = await Promise.all([
-        context.User.get(referrerUserId),
-        context.Wallet.get(buyerWalletId),
-        context.Referral.get(referralId),
-      ]);
-
-      if (referrerUser && buyerWalletEntity?.user_id !== referrerUserId) {
-        validReferralCode = extraData;
-
-        if (!existingReferral) {
-          context.Referral.set({
-            id: referralId,
-            wallet_id: buyerWalletId,
-            referrer_id: referrerUserId,
-            marketplace_id: marketplaceId,
-            firstOrderTrade_id: tradeId,
-            createdAt: event.block.timestamp,
-          });
-        }
-      }
-    }
+    const referral = await resolveReferral(event, context);
 
     context.PropertyTokenTrade.set({
       id: tradeId,
@@ -78,7 +48,7 @@ indexer.onEvent(
       makerTokenFilledAmount: event.params.makingAmount,
       propertyValuation: propertyToken.propertyValuation,
       protocol: LimitOrderProtocol.OneInch,
-      referralCode: validReferralCode,
+      referralCode: referral?.referralCode ?? '',
     });
 
     // Handle case where property token is on maker side (being sold)
@@ -103,5 +73,26 @@ indexer.onEvent(
 
     await updatePropertyTokenTradeCounts(context, event.chainId, maker, 'makerCount');
     await updatePropertyTokenTradeCounts(context, event.chainId, event.params.taker, 'takerCount');
+  },
+);
+
+// Referral bookkeeping runs as a separate handler on the same event.
+indexer.onEvent(
+  { contract: 'OneInchPostInteraction', event: 'PostInteractionOrderFilled' },
+  async ({ event, context }) => {
+    const referral = await resolveReferral(event, context);
+    if (!referral) return;
+
+    const existingReferral = await context.Referral.get(referral.referralId);
+    if (existingReferral) return;
+
+    context.Referral.set({
+      id: referral.referralId,
+      wallet_id: referral.buyerWalletId,
+      referrer_id: referral.referrerUserId,
+      marketplace_id: referral.marketplaceId,
+      firstOrderTrade_id: referral.tradeId,
+      createdAt: event.block.timestamp,
+    });
   },
 );
