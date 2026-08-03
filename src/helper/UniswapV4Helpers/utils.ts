@@ -1,5 +1,5 @@
 import { ethers, keccak256, parseUnits } from "ethers";
-import MerkleTree from "merkletreejs";
+import { MerkleTree } from "merkletreejs";
 
 // Total monthly rewards distributed to stakers in wei.
 // TODO: this set to 300 for testing, we should replace this with the correct amount for mainnet
