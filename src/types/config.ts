@@ -39,6 +39,10 @@ export type Config = {
   uniswapV4PoolManagerAddress: string,
   uniswapV4PositionManagerAddress: string,
   uniswapV4StakingAddress: string,
+  // V4 poolIds (keccak256 of PoolKey) whose Swap/ModifyLiquidity events are indexed.
+  // The PoolManager is a singleton emitting events for every V4 pool on the chain,
+  // so these are pushed down as HyperSync topic filters. Empty = skip those events.
+  uniswapV4TargetPoolIds: string[],
 };
 
 export type PropertyTokenRevenueDistributionInterval = {

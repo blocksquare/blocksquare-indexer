@@ -4,9 +4,23 @@ import { getLoadedConfig } from "../config";
 import { getAmount0, getAmount1 } from "../helper/UniswapV4Helpers/liquidityAmounts";
 import { getDay } from "../helper/date";
 
-const bstTokenAddress = getLoadedConfig().blockSquareTokenAddress;
+const { blockSquareTokenAddress: bstTokenAddress, uniswapV4TargetPoolIds } = getLoadedConfig();
 
-indexer.onEvent({ contract: "UniswapV4PoolManager", event: "Initialize" }, async ({ event, context }) => {
+// The PoolManager is a chain-wide singleton, so every V4 pool emits through it.
+// The where filters below are pushed down to HyperSync as topic filters, so
+// other pools' events are never fetched at all.
+const targetPoolFilter = () =>
+  uniswapV4TargetPoolIds.length
+    ? { params: { id: uniswapV4TargetPoolIds as `0x${string}`[] } }
+    : false;
+
+indexer.onEvent(
+  {
+    contract: "UniswapV4PoolManager",
+    event: "Initialize",
+    where: { params: { currency1: bstTokenAddress as `0x${string}` } },
+  },
+  async ({ event, context }) => {
   /**
    * We only want to index the ETH : BST pool.
    *
@@ -51,7 +65,9 @@ indexer.onEvent({ contract: "UniswapV4PoolManager", event: "Initialize" }, async
   });
 });
 
-indexer.onEvent({ contract: "UniswapV4PoolManager", event: "Swap" }, async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "UniswapV4PoolManager", event: "Swap", where: targetPoolFilter },
+  async ({ event, context }) => {
   const { chainId } = event;
   const { id: poolId, tick, sqrtPriceX96 } = event.params;
 
@@ -85,7 +101,9 @@ indexer.onEvent({ contract: "UniswapV4PoolManager", event: "Swap" }, async ({ ev
 
 });
 
-indexer.onEvent({ contract: "UniswapV4PoolManager", event: "ModifyLiquidity" }, async ({ event, context }) => {
+indexer.onEvent(
+  { contract: "UniswapV4PoolManager", event: "ModifyLiquidity", where: targetPoolFilter },
+  async ({ event, context }) => {
   /**
    * ModifyLiquidity event updates position liquidity.
    *
