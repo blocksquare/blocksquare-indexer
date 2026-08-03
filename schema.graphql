@@ -10,15 +10,33 @@ type Global {
 }
 
 enum PropertyStakingPoolType {
-    COMMUNITY
-    ISSUER
-    RWA
-    LANDHIVE
+  COMMUNITY
+  ISSUER
+  RWA
+  LANDHIVE
 }
 
 enum LimitOrderProtocol {
-    ZeroEx
-    OneInch
+  ZeroEx
+  OneInch
+}
+
+enum StakingPoolTransactionType {
+  DEPOSIT
+  WITHDRAW
+  REWARD
+}
+
+enum PropertyStakingPoolTransactionType {
+  DEPOSIT
+  WITHDRAW
+  REWARD
+}
+
+enum MarketplacePoolTransactionType {
+  DEPOSIT
+  WITHDRAW
+  REWARD
 }
 
 ### Price Tracking ###
@@ -44,6 +62,14 @@ type AssetPair @entity {
   updatedAt: Int!
   latestAggregatorAddress: Bytes! @index
   prices: [AssetPairPrice!]! @derivedFrom(field: "assetPair")
+}
+
+type UniswapV2Pool @entity {
+  id: ID!          # pool contract address
+  assetPairId: String!
+  totalSupply: BigInt!
+  reserve0: BigInt!
+  reserve1: BigInt!
 }
 
 ### Marketplace ###
@@ -89,8 +115,7 @@ type PropertyToken {
   creationTransaction: String!
   holders: [PropertyTokenHolder!]! @derivedFrom(field: "token")
   capitalStacks: [PropertyTokenCapitalStack!]! @derivedFrom(field: "property")
-  oceanpointInformations: [OceanpointTokenInformation!]!
-    @derivedFrom(field: "propertyToken")
+  oceanpointInformations: [OceanpointTokenInformation!]! @derivedFrom(field: "propertyToken")
   investments: [PropertyTokenInvestment!]! @derivedFrom(field: "propertyToken")
   trades: [PropertyTokenTrade!]! @derivedFrom(field: "propertyToken")
   totalPropertyTokenTraded: BigInt!
@@ -98,12 +123,12 @@ type PropertyToken {
   transfers: [PropertyTokenTransfer!]! @derivedFrom(field: "propertyToken")
   pendingRevenues: [PropertyTokenRevenue!]! @derivedFrom(field: "propertyToken")
   revenueClaims: [PropertyTokenRevenueClaim!]! @derivedFrom(field: "propertyToken")
-  revenueDistributions: [PropertyTokenRevenueDistribution!]!
-    @derivedFrom(field: "propertyToken")
+  revenueDistributions: [PropertyTokenRevenueDistribution!]! @derivedFrom(field: "propertyToken")
   records: [PropertyTokenRecord!]! @derivedFrom(field: "propertyToken")
   certifiedPartner: CertifiedPartner!
   latestOffering: PropertyTokenOffering!
   offerings: [PropertyTokenOffering!]! @derivedFrom(field: "property")
+  offeringV2: PropertyTokenOfferingV2
   apy: Float!
   currentYearApy: Float!
   weightedNAVDeviation: Float!
@@ -170,6 +195,7 @@ type PropertyTokenRevenueDistribution {
   id: ID!
   blockTimestamp: Int!
   chainId: Int!
+  contractAddress: String!
   propertyToken: PropertyToken!
   amounts: [BigInt!]!
   totalAmount: BigInt!
@@ -183,6 +209,7 @@ type PropertyTokenRevenueDistribution {
 type PropertyTokenRevenue {
   id: ID!
   chainId: Int!
+  contractAddress: String!
   propertyToken: PropertyToken!
   wallet: Wallet!
   pendingRevenue: BigInt!
@@ -192,6 +219,7 @@ type PropertyTokenRevenue {
 type PropertyTokenRevenueClaim {
   id: ID!
   chainId: Int!
+  contractAddress: String!
   transactionHash: Bytes!
   blockNumber: Int!
   blockTimestamp: Int!
@@ -288,20 +316,34 @@ type Wallet {
   certifiedPartner: CertifiedPartner
   properties: [PropertyTokenHolder!]! @derivedFrom(field: "wallet")
   stakingPositions: [StakingPoolPosition!]! @derivedFrom(field: "wallet")
-  propertyStakingPositions: [PropertyStakingPoolPosition!]!
-    @derivedFrom(field: "wallet")
+  propertyStakingPositions: [PropertyStakingPoolPosition!]! @derivedFrom(field: "wallet")
   takerTrades: [PropertyTokenTrade!]! @derivedFrom(field: "taker")
   makerTrades: [PropertyTokenTrade!]! @derivedFrom(field: "maker")
-  senderPropertyTokenTransfers: [PropertyTokenTransfer!]!
-    @derivedFrom(field: "from")
-  receveiverPropertyTokenTransfers: [PropertyTokenTransfer!]!
-    @derivedFrom(field: "to")
+  senderPropertyTokenTransfers: [PropertyTokenTransfer!]! @derivedFrom(field: "from")
+  receveiverPropertyTokenTransfers: [PropertyTokenTransfer!]! @derivedFrom(field: "to")
   propertyInvestments: [PropertyTokenInvestment!]! @derivedFrom(field: "wallet")
   pendingRevenues: [PropertyTokenRevenue!]! @derivedFrom(field: "wallet")
   revenueClaims: [PropertyTokenRevenueClaim!]! @derivedFrom(field: "wallet")
+  propertyStakingPoolTransactions: [PropertyStakingPoolTransaction!]! @derivedFrom(field: "wallet")
+  marketplacePoolTransactions: [MarketplacePoolTransaction!]! @derivedFrom(field: "wallet")
+  stakingPoolTransactions: [StakingPoolTransaction!]! @derivedFrom(field: "wallet")
 }
 
 ### Oceanpoint ###
+
+type StakingPoolTransaction {
+  id: ID!
+  chainId: Int!
+  pool: StakingPool!
+  transactionType: StakingPoolTransactionType!
+  transactionHash: Bytes!
+  blockNumber: Int!
+  blockTimestamp: Int!
+  wallet: Wallet!
+  amount: BigInt!
+  issuedAmount: BigInt
+  dayStartTimestamp: Int!
+}
 
 type StakingPool {
   id: ID!
@@ -315,6 +357,7 @@ type StakingPool {
   totalWithdrawAmount: BigInt!
   positions: [StakingPoolPosition!]! @derivedFrom(field: "pool")
   historyRecords: [StakingPoolRecord!]! @derivedFrom(field: "pool")
+  transactions: [StakingPoolTransaction!]! @derivedFrom(field: "pool")
 }
 
 type StakingPoolPosition {
@@ -341,6 +384,23 @@ type OceanpointTokenInformation {
   apy: BigInt!
 }
 
+type PropertyStakingPoolTransaction {
+  id: ID!
+  chainId: Int!
+  pool: PropertyStakingPool!
+  transactionType: PropertyStakingPoolTransactionType!
+  transactionHash: Bytes!
+  blockNumber: Int!
+  blockTimestamp: Int!
+  wallet: Wallet!
+  amount: BigInt!
+  tokenAddress: Bytes!
+  issuedAmount: BigInt
+  rewardToUser: BigInt
+  rewardToFeeReceiver: BigInt
+  dayStartTimestamp: Int!
+}
+
 type PropertyStakingPool {
   id: ID!
   chainId: Int!
@@ -350,10 +410,10 @@ type PropertyStakingPool {
   totalRewardsPaid: BigInt!
   currentRewards: BigInt!
   tvl: BigInt!
-  tokenInformations: [OceanpointTokenInformation!]!
-    @derivedFrom(field: "propertyStakingPool")
+  tokenInformations: [OceanpointTokenInformation!]! @derivedFrom(field: "propertyStakingPool")
   positions: [PropertyStakingPoolPosition!]! @derivedFrom(field: "pool")
   historyRecords: [PropertyStakingPoolRecord!]! @derivedFrom(field: "pool")
+  transactions: [PropertyStakingPoolTransaction!]! @derivedFrom(field: "pool")
 }
 
 type TokenDeposit {
@@ -382,6 +442,22 @@ type PropertyStakingPoolPosition {
 type Reward {
   id: ID!
   chainId: Int!
+}
+
+type MarketplacePoolTransaction {
+  id: ID!
+  chainId: Int!
+  pool: MarketplacePool!
+  transactionType: MarketplacePoolTransactionType!
+  transactionHash: Bytes!
+  blockNumber: Int!
+  blockTimestamp: Int!
+  wallet: Wallet!
+  amount: BigInt!
+  issuedAmount: BigInt
+  reward: BigInt
+  ratioAtTransaction: BigDecimal!
+  dayStartTimestamp: Int!
 }
 
 type MarketplacePool {
@@ -423,6 +499,7 @@ type MarketplacePool {
   stats: [MarketplacePoolRecord!]! @derivedFrom(field: "pool")
   isCpCollateralLiquidated: Boolean!
   cpCollateralLiquidatedAt: Int!
+  transactions: [MarketplacePoolTransaction!]! @derivedFrom(field: "pool")
 }
 
 type MarketplacePoolPosition {
@@ -540,4 +617,67 @@ type Referral @entity {
   marketplace: CertifiedPartner!
   firstOrderTrade: PropertyTokenTrade!
   createdAt: Int!
+}
+
+# ─── Offering V2 ───────────────────────────────────────────────────────────────
+
+# chainId-propertyAddress
+type PropertyTokenOfferingV2 {
+  id: ID!
+  chainId: Int!
+  property: PropertyToken!
+  mainSales: [MainSaleOffering!]! @derivedFrom(field: "offering")
+  presales: [PresaleOffering!]! @derivedFrom(field: "offering")
+}
+
+# chainId-propertyAddress-saleIndex
+type MainSaleOffering {
+  id: ID!
+  chainId: Int!
+  offering: PropertyTokenOfferingV2! @index
+  startDateTimestamp: Int! @index
+  endDateTimestamp: Int! @index
+  maxInvestment: BigInt!
+  minInvestment: BigInt!
+  mintedAmount: BigInt!
+  pricePerToken: BigInt!
+  assetPriceIdentifier: String!
+  softCap: BigInt!
+  hardCap: BigInt!
+  collector: String!
+  feeCollector: String!
+  fee: BigInt!
+  investments: [MainSaleInvestment!]! @derivedFrom(field: "mainSaleOffering")
+  investmentTokens: [String!]!
+  status: String!
+}
+
+# chainId-propertyAddress-saleIndex-txHash
+type MainSaleInvestment {
+  id: ID!
+  chainId: Int!
+  transactionHash: Bytes!
+  mainSaleOffering: MainSaleOffering! @index
+  propertyToken: PropertyToken!
+  wallet: Wallet!
+  investmentToken: String!
+  amountInvested: BigInt!
+  amountReceived: BigInt!
+  blockTimestamp: Int!
+}
+
+# chainId-propertyAddress-saleIndex
+type PresaleOffering {
+  id: ID!
+  chainId: Int!
+  offering: PropertyTokenOfferingV2! @index
+  startDateTimestamp: Int! @index
+  endDateTimestamp: Int! @index
+  maxInvestment: BigInt!
+  minInvestment: BigInt!
+  pricePerToken: BigInt!
+  softCap: BigInt!
+  hardCap: BigInt!
+  totalMintedAmount: BigInt!
+  status: String!
 }

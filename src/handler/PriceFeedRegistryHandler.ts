@@ -38,7 +38,7 @@ PriceFeedRegistry.FeedConfirmed.contractRegister(
   },
   {
     preRegisterDynamicContracts: false,
-  }
+  },
 );
 
 PriceFeedRegistry.FeedConfirmed.handler(async ({ event, context }) => {

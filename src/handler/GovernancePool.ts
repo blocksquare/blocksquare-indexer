@@ -20,15 +20,14 @@ GovernancePool.Transfer.handler(async ({ event, context }) => {
   // Skip if value is zero
   if (event.params.value === 0n) return;
   // Skip if from or two is zero address. This is handled by the deposit / withdraw already
-  if (event.params.from == ZeroAddress || event.params.to == ZeroAddress)
-    return;
+  if (event.params.from == ZeroAddress || event.params.to == ZeroAddress) return;
 
   const fromPoolPositionId = `${event.chainId}-${event.srcAddress}-${event.params.from}`;
   const toPoolPositionId = `${event.chainId}-${event.srcAddress}-${event.params.to}`;
   const [fromPoolPosition, loadedToPoolPosition] = await Promise.all([
     context.StakingPoolPosition.getOrThrow(
       fromPoolPositionId,
-      'GovernancePool.Transfer.handler: StakingPoolPosition not found'
+      'GovernancePool.Transfer.handler: StakingPoolPosition not found',
     ),
     context.StakingPoolPosition.get(toPoolPositionId),
   ]);
@@ -46,17 +45,11 @@ GovernancePool.Transfer.handler(async ({ event, context }) => {
   let toPoolPosition = loadedToPoolPosition;
 
   if (!toPoolPosition) {
-    const toWallet = await context.Wallet.get(
-      `${event.chainId}-${event.params.to}`
-    );
+    const toWallet = await context.Wallet.get(`${event.chainId}-${event.params.to}`);
     if (!toWallet) {
       context.Wallet.set(getNewWallet(event.chainId, event.params.to));
     }
-    toPoolPosition = getNewStakingPoolPosition(
-      event.chainId,
-      event.srcAddress,
-      event.params.to
-    );
+    toPoolPosition = getNewStakingPoolPosition(event.chainId, event.srcAddress, event.params.to);
   }
 
   context.StakingPoolPosition.set({

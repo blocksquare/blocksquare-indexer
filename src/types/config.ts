@@ -1,5 +1,5 @@
-import { Dayjs } from "dayjs";
-import { PropertyStakingPoolType } from "./enums";
+import { Dayjs } from 'dayjs';
+import { PropertyStakingPoolType } from './enums';
 
 export type Config = {
   chainId: number;
@@ -15,16 +15,19 @@ export type Config = {
   propertyFactoryAddress: string;
   propertyRegistryAddress: string;
   propertyRevenueDistributionAddress: string;
+  legacyPropertyRevenueDistributionAddress?: string;
   propertyStakingContracts: Array<{
     address: string;
     valuationAddress: string;
     type: PropertyStakingPoolType;
   }>;
-  uniswapPoolContracts: Array<{
-    assetPairId: string;
+  uniswapPoolContracts: Record<string, {
     address: string;
+    token0PairId: string;
+    token1PairId: string;
   }>;
   propertyTokenOfferingAddress: string;
+  propertyTokenOfferingV2Address: string | null;
   uniswapWethDaiPoolAddress: string;
   usersRegistryAddress: string;
   zeroExAddress: string;

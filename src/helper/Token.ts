@@ -5,7 +5,7 @@ export const getNewToken = (
   chainId: number,
   tokenAddress: string,
   name: string,
-  symbol: string
+  symbol: string,
 ): Token => {
   return {
     id: `${chainId}-${tokenAddress}`,
@@ -25,7 +25,7 @@ export const getNewToken = (
 export const getNewTokenHolder = (
   chainId: number,
   tokenHolderId: string,
-  tokenAddress: string
+  tokenAddress: string,
 ): TokenHolder => {
   return {
     id: tokenHolderId,
@@ -35,10 +35,7 @@ export const getNewTokenHolder = (
   };
 };
 
-export const getTokenRecord = (
-  token: Token,
-  timestamp: number
-): TokenRecord => {
+export const getTokenRecord = (token: Token, timestamp: number): TokenRecord => {
   const { id: hourId, start: hourStart } = getHour(timestamp);
   const { start: dayStart } = getDay(timestamp);
 

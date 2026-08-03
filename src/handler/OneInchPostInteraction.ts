@@ -1,6 +1,10 @@
 import { OneInchPostInteraction } from 'generated';
-import {ORDER_STRUCT_INDEX, uint256ToAddress, updatePropertyTokenTradeCounts} from '../helper/LimitOrderTrades';
-import {LimitOrderProtocol} from "../types/enums";
+import {
+  ORDER_STRUCT_INDEX,
+  uint256ToAddress,
+  updatePropertyTokenTradeCounts,
+} from '../helper/LimitOrderTrades';
+import { LimitOrderProtocol } from '../types/enums';
 
 OneInchPostInteraction.PostInteractionOrderFilled.handler(async ({ event, context }) => {
   // Extract token addresses from the nested order struct (tuple array)
@@ -14,7 +18,7 @@ OneInchPostInteraction.PostInteractionOrderFilled.handler(async ({ event, contex
   // Check if either makerToken or takerToken is a property token
   const [makerPropertyToken, takerPropertyToken] = await Promise.all([
     context.PropertyToken.get(`${event.chainId}-${makerToken}`),
-    context.PropertyToken.get(`${event.chainId}-${takerToken}`)
+    context.PropertyToken.get(`${event.chainId}-${takerToken}`),
   ]);
 
   // Determine which property token to use (at least one must exist)
@@ -83,11 +87,8 @@ OneInchPostInteraction.PostInteractionOrderFilled.handler(async ({ event, contex
     context.PropertyToken.set({
       ...makerPropertyToken,
       totalPropertyTokenTraded:
-        makerPropertyToken.totalPropertyTokenTraded +
-        event.params.makingAmount,
-      totalValueTraded:
-        makerPropertyToken.totalValueTraded +
-        event.params.takingAmount,
+        makerPropertyToken.totalPropertyTokenTraded + event.params.makingAmount,
+      totalValueTraded: makerPropertyToken.totalValueTraded + event.params.takingAmount,
     });
   }
 
@@ -96,26 +97,11 @@ OneInchPostInteraction.PostInteractionOrderFilled.handler(async ({ event, contex
     context.PropertyToken.set({
       ...takerPropertyToken,
       totalPropertyTokenTraded:
-        takerPropertyToken.totalPropertyTokenTraded +
-        event.params.takingAmount,
-      totalValueTraded:
-        takerPropertyToken.totalValueTraded +
-        event.params.makingAmount,
+        takerPropertyToken.totalPropertyTokenTraded + event.params.takingAmount,
+      totalValueTraded: takerPropertyToken.totalValueTraded + event.params.makingAmount,
     });
   }
 
-  await updatePropertyTokenTradeCounts(
-    context,
-    event.chainId,
-    maker,
-    'makerCount'
-  );
-  await updatePropertyTokenTradeCounts(
-    context,
-    event.chainId,
-    event.params.taker,
-    'takerCount'
-  );
-
+  await updatePropertyTokenTradeCounts(context, event.chainId, maker, 'makerCount');
+  await updatePropertyTokenTradeCounts(context, event.chainId, event.params.taker, 'takerCount');
 });
-

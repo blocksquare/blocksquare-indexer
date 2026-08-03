@@ -3,7 +3,7 @@ import { UserCertifiedPartner } from 'generated';
 export const getNewUserCertifiedPartner = (
   chainId: number,
   userAddress: string,
-  certifiedPartnerAddress: string
+  certifiedPartnerAddress: string,
 ): UserCertifiedPartner => {
   return {
     id: `${chainId}-${userAddress}-${certifiedPartnerAddress}`,
