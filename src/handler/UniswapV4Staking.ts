@@ -7,6 +7,7 @@ import { ethers, id } from "ethers";
 import {
   BOOST_PRECISION,
   buildMerkleTree,
+  computeV4PoolId,
   getPredictedDailyBlockCount,
   getUniswapV4StakingDeployementBlock,
   TOTAL_DAILY_REWARDS,
@@ -52,7 +53,7 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "LPStakingInit" }, async 
   if (typeof poolKey === 'string') {
     poolId = poolKey;
   } else {
-    const components = Array.isArray(poolKey)
+    const [currency0, currency1, fee, tickSpacing, hooks] = Array.isArray(poolKey)
       ? poolKey
       : [
           targetPoolKey.currency0,
@@ -61,12 +62,7 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "LPStakingInit" }, async 
           targetPoolKey.tickSpacing,
           targetPoolKey.hooks,
         ];
-    poolId = ethers.keccak256(
-      ethers.AbiCoder.defaultAbiCoder().encode(
-        ['address', 'address', 'uint24', 'int24', 'address'],
-        components,
-      ),
-    );
+    poolId = computeV4PoolId(currency0, currency1, fee, tickSpacing, hooks);
   }
   const uniV4PoolEntityId = `${chainId}-${poolId}`;
 

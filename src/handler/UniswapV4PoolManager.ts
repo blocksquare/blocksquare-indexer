@@ -2,17 +2,21 @@ import { ZeroAddress } from "ethers";
 import { indexer } from "envio";
 import { getLoadedConfig } from "../config";
 import { getAmount0, getAmount1 } from "../helper/UniswapV4Helpers/liquidityAmounts";
+import { getStandardEthBstPoolIds } from "../helper/UniswapV4Helpers/utils";
 import { getDay } from "../helper/date";
 
-const { blockSquareTokenAddress: bstTokenAddress, uniswapV4TargetPoolIds } = getLoadedConfig();
+const { blockSquareTokenAddress: bstTokenAddress, uniswapV4ExtraPoolIds } = getLoadedConfig();
 
 // The PoolManager is a chain-wide singleton, so every V4 pool emits through it.
 // The where filters below are pushed down to HyperSync as topic filters, so
-// other pools' events are never fetched at all.
-const targetPoolFilter = () =>
-  uniswapV4TargetPoolIds.length
-    ? { params: { id: uniswapV4TargetPoolIds as `0x${string}`[] } }
-    : false;
+// other pools' events are never fetched at all. Standard-tier ETH/BST poolIds
+// are derived upfront (they are deterministic), covering those pools even
+// before they are created; hooked/non-standard pools come from config.
+const targetPoolIds = [
+  ...new Set([...getStandardEthBstPoolIds(bstTokenAddress), ...uniswapV4ExtraPoolIds]),
+] as `0x${string}`[];
+
+const targetPoolFilter = () => ({ params: { id: targetPoolIds } });
 
 indexer.onEvent(
   {

@@ -5,7 +5,7 @@ import { createTestIndexer, type TestIndexer, type TestIndexerProcessConfig } fr
 import { ZeroAddress } from 'ethers';
 import { CHAIN_ID, addr } from './fixtures';
 import { getAmount0, getAmount1 } from '../src/helper/UniswapV4Helpers/liquidityAmounts';
-import { testnetConfig } from '../src/config/testnet';
+import { computeV4PoolId } from '../src/helper/UniswapV4Helpers/utils';
 
 type ChainSimulate = NonNullable<
   NonNullable<TestIndexerProcessConfig['chains'][typeof CHAIN_ID]>['simulate']
@@ -17,9 +17,9 @@ const BST_ADDRESS = addr('0x7000Ec7486d8c6f9bd9FfA930f9ACE2D9564d02b');
 const OTHER_TOKEN = addr('0x9999999999999999999999999999999999999999');
 const SENDER = addr('0x6666666666666666666666666666666666666666');
 
-// Swap/ModifyLiquidity are where-filtered to the configured target pool ids,
-// so simulated events must use the configured id to route to the handlers.
-const POOL_ID = testnetConfig.uniswapV4TargetPoolIds[0]!;
+// Swap/ModifyLiquidity are where-filtered to the derived target pool ids,
+// so simulated events use the real ETH/BST 0.3% poolId.
+const POOL_ID = computeV4PoolId(ZeroAddress, BST_ADDRESS, 3000n, 60n, ZeroAddress);
 const OTHER_POOL_ID = `0x${'cd'.repeat(32)}`;
 const POOL_ENTITY_ID = `${CHAIN_ID}-${POOL_ID}`;
 
