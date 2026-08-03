@@ -65,7 +65,4 @@ export const testnetConfig: Config = {
   uniswapV4PoolManagerAddress: getAddress('0xE03A1074c86CFeDd5C142C4F04F1a1536e203543'),
   uniswapV4PositionManagerAddress: getAddress('0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4'),
   uniswapV4StakingAddress: getAddress('0xfdf22B183490f005e2e51A6Caf4202E46cc11b97'),
-  // Standard-tier ETH/BST pools (incl. the live 0.3% pool
-  // 0x84a4faa6...ecb8 from block 10245452) are derived automatically.
-  uniswapV4ExtraPoolIds: [],
 };

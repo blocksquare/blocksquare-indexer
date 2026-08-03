@@ -17,8 +17,7 @@ const BST_ADDRESS = addr('0x7000Ec7486d8c6f9bd9FfA930f9ACE2D9564d02b');
 const OTHER_TOKEN = addr('0x9999999999999999999999999999999999999999');
 const SENDER = addr('0x6666666666666666666666666666666666666666');
 
-// Swap/ModifyLiquidity are where-filtered to the derived target pool ids,
-// so simulated events use the real ETH/BST 0.3% poolId.
+// The real ETH/BST 0.3% poolId, derived the same way the chain does.
 const POOL_ID = computeV4PoolId(ZeroAddress, BST_ADDRESS, 3000n, 60n, ZeroAddress);
 const OTHER_POOL_ID = `0x${'cd'.repeat(32)}`;
 const POOL_ENTITY_ID = `${CHAIN_ID}-${POOL_ID}`;
@@ -116,8 +115,7 @@ describe('UniswapV4PoolManager', () => {
       indexer,
       // ETH/BST -> indexed
       initializeEvent({ logIndex: 1 }),
-      // BST as currency1 but currency0 is not native ETH -> passes the where
-      // filter (currency1 = BST) but is rejected by the handler guard
+      // BST as currency1 but currency0 is not native ETH -> rejected by the handler guard
       initializeEvent({ poolId: `0x${'ee'.repeat(32)}`, currency0: OTHER_TOKEN, logIndex: 3 }),
     );
 
@@ -138,9 +136,6 @@ describe('UniswapV4PoolManager', () => {
     t.expect(await indexer.UniswapV4PoolPositionRecord.getAll()).toHaveLength(0);
   });
 
-  // The where filters (currency1 on Initialize, pool id on Swap/ModifyLiquidity)
-  // are applied at the HyperSync fetch layer and not by the simulate pipeline,
-  // so these tests assert the in-handler guards that back them up.
   it('non-BST Initialize creates no pool', async (t) => {
     await runEvents(indexer, initializeEvent({ poolId: OTHER_POOL_ID, currency1: OTHER_TOKEN }));
     t.expect(await indexer.UniswapV4Pool.getAll()).toHaveLength(0);

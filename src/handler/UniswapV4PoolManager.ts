@@ -2,34 +2,14 @@ import { ZeroAddress } from "ethers";
 import { indexer } from "envio";
 import { getLoadedConfig } from "../config";
 import { getAmount0, getAmount1 } from "../helper/UniswapV4Helpers/liquidityAmounts";
-import { getStandardEthBstPoolIds } from "../helper/UniswapV4Helpers/utils";
 import { getDay } from "../helper/date";
 
-const { blockSquareTokenAddress: bstTokenAddress, uniswapV4ExtraPoolIds } = getLoadedConfig();
+const bstTokenAddress = getLoadedConfig().blockSquareTokenAddress;
 
 // The PoolManager is a chain-wide singleton, so every V4 pool emits through it.
-// The where filters below are pushed down to HyperSync as topic filters, so
-// other pools' events are never fetched at all. Swap/ModifyLiquidity only carry
-// the poolId in their topics, so the filter is the deterministic standard-tier
-// ETH/BST poolIds plus any hooked/non-standard pools listed in config.
-const targetPoolIds = [
-  ...new Set([...getStandardEthBstPoolIds(bstTokenAddress), ...uniswapV4ExtraPoolIds]),
-] as `0x${string}`[];
-
-const targetPoolFilter = () => ({ params: { id: targetPoolIds } });
-
-indexer.onEvent(
-  {
-    contract: "UniswapV4PoolManager",
-    event: "Initialize",
-    where: {
-      params: {
-        currency0: ZeroAddress as `0x${string}`,
-        currency1: bstTokenAddress as `0x${string}`,
-      },
-    },
-  },
-  async ({ event, context }) => {
+// Like envio's reference uniswap-v4-indexer, all pool events are processed and
+// non-ETH/BST pools are dropped by the handler guards below.
+indexer.onEvent({ contract: "UniswapV4PoolManager", event: "Initialize" }, async ({ event, context }) => {
   /**
    * We only want to index the ETH : BST pool.
    *
@@ -74,9 +54,7 @@ indexer.onEvent(
   });
 });
 
-indexer.onEvent(
-  { contract: "UniswapV4PoolManager", event: "Swap", where: targetPoolFilter },
-  async ({ event, context }) => {
+indexer.onEvent({ contract: "UniswapV4PoolManager", event: "Swap" }, async ({ event, context }) => {
   const { chainId } = event;
   const { id: poolId, tick, sqrtPriceX96 } = event.params;
 
@@ -110,9 +88,7 @@ indexer.onEvent(
 
 });
 
-indexer.onEvent(
-  { contract: "UniswapV4PoolManager", event: "ModifyLiquidity", where: targetPoolFilter },
-  async ({ event, context }) => {
+indexer.onEvent({ contract: "UniswapV4PoolManager", event: "ModifyLiquidity" }, async ({ event, context }) => {
   /**
    * ModifyLiquidity event updates position liquidity.
    *

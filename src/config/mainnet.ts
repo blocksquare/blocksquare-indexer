@@ -60,5 +60,4 @@ export const mainnetConfig: Config = {
   uniswapV4PoolManagerAddress: '',
   uniswapV4PositionManagerAddress: '',
   uniswapV4StakingAddress: '',
-  uniswapV4ExtraPoolIds: [],
 };

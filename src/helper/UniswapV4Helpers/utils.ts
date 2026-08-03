@@ -71,21 +71,3 @@ export const computeV4PoolId = (
       [currency0, currency1, fee, tickSpacing, hooks],
     ),
   );
-
-// Canonical V4 fee tiers with their standard tick spacings.
-const STANDARD_FEE_TIERS: Array<[bigint, bigint]> = [
-  [100n, 1n],
-  [500n, 10n],
-  [3000n, 60n],
-  [10000n, 200n],
-];
-
-// PoolIds of every standard-tier, hookless native-ETH/BST pool. Swap and
-// ModifyLiquidity events only carry the poolId in their topics (no currencies),
-// so "any ETH/BST pool" must be expressed as this precomputed id set.
-// Pools with hooks or non-standard tick spacing need an entry in the
-// uniswapV4ExtraPoolIds config list.
-export const getStandardEthBstPoolIds = (bstTokenAddress: string): string[] =>
-  STANDARD_FEE_TIERS.map(([fee, tickSpacing]) =>
-    computeV4PoolId(ethers.ZeroAddress, bstTokenAddress, fee, tickSpacing, ethers.ZeroAddress),
-  );

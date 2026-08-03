@@ -39,10 +39,6 @@ export type Config = {
   uniswapV4PoolManagerAddress: string,
   uniswapV4PositionManagerAddress: string,
   uniswapV4StakingAddress: string,
-  // Extra V4 poolIds (keccak256 of PoolKey) whose Swap/ModifyLiquidity events are
-  // indexed in addition to the auto-derived standard-tier ETH/BST pools.
-  // Only needed for ETH/BST pools with hooks or non-standard tick spacing.
-  uniswapV4ExtraPoolIds: string[],
 };
 
 export type PropertyTokenRevenueDistributionInterval = {
