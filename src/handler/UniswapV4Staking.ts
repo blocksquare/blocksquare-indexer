@@ -351,12 +351,12 @@ indexer.onBlock(
     if (!uniV4Pool) return;
 
     // Fetch all open staked positions for this pool in a single multi-field query.
-    const activeStakedPositions = (
-      await context.StakingPoolV4Position.getWhere({
+    const activeStakedPositions = [
+      ...(await context.StakingPoolV4Position.getWhere({
         pool_id: { _eq: STAKING_POOL_ENTITY_ID },
         isPositionClosed: { _eq: false },
-      })
-    ).sort((a, b) => a.updatedAtTimestamp - b.updatedAtTimestamp);
+      })),
+    ].sort((a, b) => a.updatedAtTimestamp - b.updatedAtTimestamp);
     if (activeStakedPositions.length === 0) return;
 
     const uniPositions = await context.UniswapV4PoolPosition.getWhere({
