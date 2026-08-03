@@ -3,36 +3,17 @@ import { indexer } from "envio";
 import { getLoadedConfig } from "../config";
 import { getAmount0, getAmount1 } from "../helper/UniswapV4Helpers/liquidityAmounts";
 import { getStandardEthBstPoolIds } from "../helper/UniswapV4Helpers/utils";
-import { discoverEthBstPoolIds } from "../helper/UniswapV4Helpers/poolDiscovery";
 import { getDay } from "../helper/date";
 
-const {
-  blockSquareTokenAddress: bstTokenAddress,
-  chainId,
-  uniswapV4PoolManagerAddress,
-  uniswapV4ExtraPoolIds,
-} = getLoadedConfig();
+const { blockSquareTokenAddress: bstTokenAddress, uniswapV4ExtraPoolIds } = getLoadedConfig();
 
 // The PoolManager is a chain-wide singleton, so every V4 pool emits through it.
 // The where filters below are pushed down to HyperSync as topic filters, so
-// other pools' events are never fetched at all. Covered poolIds:
-// 1. standard-tier ETH/BST pools, derived deterministically (works for pools
-//    that don't exist yet),
-// 2. every ETH/BST pool already on-chain at startup, discovered via HyperSync
-//    (catches custom fees, tick spacings and hooks),
-// 3. manual additions from config.
-const discoveredPoolIds = await discoverEthBstPoolIds(
-  chainId,
-  uniswapV4PoolManagerAddress,
-  bstTokenAddress,
-);
-
+// other pools' events are never fetched at all. Swap/ModifyLiquidity only carry
+// the poolId in their topics, so the filter is the deterministic standard-tier
+// ETH/BST poolIds plus any hooked/non-standard pools listed in config.
 const targetPoolIds = [
-  ...new Set([
-    ...getStandardEthBstPoolIds(bstTokenAddress),
-    ...discoveredPoolIds,
-    ...uniswapV4ExtraPoolIds,
-  ]),
+  ...new Set([...getStandardEthBstPoolIds(bstTokenAddress), ...uniswapV4ExtraPoolIds]),
 ] as `0x${string}`[];
 
 const targetPoolFilter = () => ({ params: { id: targetPoolIds } });
@@ -41,7 +22,12 @@ indexer.onEvent(
   {
     contract: "UniswapV4PoolManager",
     event: "Initialize",
-    where: { params: { currency1: bstTokenAddress as `0x${string}` } },
+    where: {
+      params: {
+        currency0: ZeroAddress as `0x${string}`,
+        currency1: bstTokenAddress as `0x${string}`,
+      },
+    },
   },
   async ({ event, context }) => {
   /**
