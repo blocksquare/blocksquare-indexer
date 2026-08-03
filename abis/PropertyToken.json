@@ -170,9 +170,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "account", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "account", "type": "address" }],
     "name": "balanceOf",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -222,9 +220,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "newOwner", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
     "name": "changeLI",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -415,18 +411,14 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "burnContract", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "burnContract", "type": "address" }],
     "name": "setBurnContract",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "mintContract", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "mintContract", "type": "address" }],
     "name": "setMintContract",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -468,9 +460,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "newOwner", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",

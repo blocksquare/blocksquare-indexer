@@ -496,18 +496,14 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "_transmitter", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "_transmitter", "type": "address" }],
     "name": "acceptPayeeship",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "_user", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
     "name": "addAccess",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -562,9 +558,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "uint256", "name": "_roundId", "type": "uint256" }
-    ],
+    "inputs": [{ "internalType": "uint256", "name": "_roundId", "type": "uint256" }],
     "name": "getAnswer",
     "outputs": [{ "internalType": "int256", "name": "", "type": "int256" }],
     "stateMutability": "view",
@@ -596,9 +590,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "uint80", "name": "_roundId", "type": "uint80" }
-    ],
+    "inputs": [{ "internalType": "uint80", "name": "_roundId", "type": "uint80" }],
     "name": "getRoundData",
     "outputs": [
       { "internalType": "uint80", "name": "roundId", "type": "uint80" },
@@ -611,9 +603,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "uint256", "name": "_roundId", "type": "uint256" }
-    ],
+    "inputs": [{ "internalType": "uint256", "name": "_roundId", "type": "uint256" }],
     "name": "getTimestamp",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -690,9 +680,7 @@
   {
     "inputs": [],
     "name": "linkAvailableForPayment",
-    "outputs": [
-      { "internalType": "int256", "name": "availableBalance", "type": "int256" }
-    ],
+    "outputs": [{ "internalType": "int256", "name": "availableBalance", "type": "int256" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -724,9 +712,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "_transmitter", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "_transmitter", "type": "address" }],
     "name": "owedPayment",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -735,16 +721,12 @@
   {
     "inputs": [],
     "name": "owner",
-    "outputs": [
-      { "internalType": "address payable", "name": "", "type": "address" }
-    ],
+    "outputs": [{ "internalType": "address payable", "name": "", "type": "address" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "_user", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
     "name": "removeAccess",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -910,9 +892,7 @@
   {
     "inputs": [],
     "name": "transmitters",
-    "outputs": [
-      { "internalType": "address[]", "name": "", "type": "address[]" }
-    ],
+    "outputs": [{ "internalType": "address[]", "name": "", "type": "address[]" }],
     "stateMutability": "view",
     "type": "function"
   },
@@ -955,9 +935,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "_transmitter", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "_transmitter", "type": "address" }],
     "name": "withdrawPayment",
     "outputs": [],
     "stateMutability": "nonpayable",

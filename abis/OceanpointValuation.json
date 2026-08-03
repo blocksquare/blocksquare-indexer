@@ -71,18 +71,14 @@
     "type": "event"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "apyUpdater", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "apyUpdater", "type": "address" }],
     "name": "changeApyUpdater",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "dataProxy", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "dataProxy", "type": "address" }],
     "name": "changeDataProxy",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -102,18 +98,14 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "property", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "property", "type": "address" }],
     "name": "getPropertyAPY",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "property", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "property", "type": "address" }],
     "name": "getPropertyValuation",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
@@ -143,9 +135,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "property", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "property", "type": "address" }],
     "name": "removeProperty",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -159,9 +149,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "newOwner", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",

@@ -1,19 +1,15 @@
 import { OceanpointValuation } from 'generated';
 import { getNewOceanpointTokenInformation } from '../helper/OceanpointTokenValuation';
 import {
-    getStakingPoolAddressFromValuationAddress,
-    getStakingPoolTypeFromValuationAddress
+  getStakingPoolAddressFromValuationAddress,
+  getStakingPoolTypeFromValuationAddress,
 } from '../helper/PropertyStakingPool';
-import {BIGINT_100K} from "../helper/constants";
+import { BIGINT_100K } from '../helper/constants';
 
 OceanpointValuation.ValuationUpdate.handler(async ({ event, context }) => {
-  const stakingPoolAdddress = getStakingPoolAddressFromValuationAddress(
-    event.srcAddress
-  );
+  const stakingPoolAdddress = getStakingPoolAddressFromValuationAddress(event.srcAddress);
 
-  const stakingPoolType = getStakingPoolTypeFromValuationAddress(
-      event.srcAddress
-   );
+  const stakingPoolType = getStakingPoolTypeFromValuationAddress(event.srcAddress);
 
   const valuation = await context.OceanpointTokenInformation.getOrCreate(
     getNewOceanpointTokenInformation(
@@ -21,8 +17,8 @@ OceanpointValuation.ValuationUpdate.handler(async ({ event, context }) => {
       event.params.property,
       event.srcAddress,
       stakingPoolAdddress,
-      stakingPoolType
-    )
+      stakingPoolType,
+    ),
   );
 
   const valuePerBSPT = event.params.newValuation / BIGINT_100K;
@@ -37,13 +33,9 @@ OceanpointValuation.ValuationUpdate.handler(async ({ event, context }) => {
 });
 
 OceanpointValuation.APYUpdate.handler(async ({ event, context }) => {
-  const stakingPoolAdddress = getStakingPoolAddressFromValuationAddress(
-    event.srcAddress
-  );
+  const stakingPoolAdddress = getStakingPoolAddressFromValuationAddress(event.srcAddress);
 
-  const stakingPoolType = getStakingPoolTypeFromValuationAddress(
-      event.srcAddress
-  );
+  const stakingPoolType = getStakingPoolTypeFromValuationAddress(event.srcAddress);
 
   const valuation = await context.OceanpointTokenInformation.getOrCreate(
     getNewOceanpointTokenInformation(
@@ -51,8 +43,8 @@ OceanpointValuation.APYUpdate.handler(async ({ event, context }) => {
       event.params.property,
       event.srcAddress,
       stakingPoolAdddress,
-      stakingPoolType
-    )
+      stakingPoolType,
+    ),
   );
 
   context.OceanpointTokenInformation.set({

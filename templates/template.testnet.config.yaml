@@ -1,5 +1,6 @@
 name: Blocksquare
 preload_handlers: true
+unordered_multichain_mode: true
 field_selection:
   transaction_fields:
     - "hash"
@@ -137,6 +138,8 @@ contracts:
     handler: src/handler/UniswapPoolV2.ts
     events:
       - event: Swap
+      - event: Sync
+      - event: Transfer
   - name: Users
     abi_file_path: abis/Users.json
     handler: src/handler/Users.ts
@@ -153,6 +156,19 @@ contracts:
     handler: src/handler/OneInchPostInteraction.ts
     events:
       - event: PostInteractionOrderFilled
+  - name: PropertyTokenOfferingV2
+    abi_file_path: abis/PropertyTokenOfferingV2.json
+    handler: src/handler/PropertyTokenOfferingV2.ts
+    events:
+      - event: MainSaleAdded
+      - event: PresaleAdded
+      - event: Invested
+      - event: PresaleTokensMinted
+      - event: ClaimInvestment
+      - event: MainSaleCanceled
+      - event: PresaleCanceled
+      - event: MainSaleInvestmentsRefunded
+      - event: PresaleInvestmentsRefunded
   # This is used to index mainnet for price feeds
   - name: PriceFeedRegistry
     abi_file_path: ./abis/PriceFeedRegistry.json
@@ -164,7 +180,6 @@ contracts:
     handler: src/handler/PriceFeedDataHandler.ts
     events:
       - event: AnswerUpdated
-unordered_multichain_mode: true
 networks:
   ### START PRICE FEED SECTION  ###
   # We fetch the prices of BST and other currencies directly from mainnet as they are not available on testnet
@@ -211,6 +226,9 @@ networks:
       - name: PropertyTokenOffering
         address:
           - <%= config.propertyTokenOfferingAddress %>
+      - name: PropertyTokenOfferingV2
+        address:
+          - <%= config.propertyTokenOfferingV2Address %>
       - name: PropertyFactory
         address:
           - <%= config.propertyFactoryAddress %>
@@ -220,6 +238,7 @@ networks:
       - name: PropertyRevenueDistribution
         address:
           - <%= config.propertyRevenueDistributionAddress %>
+          - <%= config.legacyPropertyRevenueDistributionAddress %>
       - name: PropertyStakingPool
         address: [<%= config.jointStakingPoolContracts %>]
       - name: Users

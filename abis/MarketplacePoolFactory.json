@@ -225,9 +225,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "cpWallet", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "cpWallet", "type": "address" }],
     "name": "getMarketplacePoolOfCPWallet",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
@@ -262,9 +260,7 @@
     "type": "function"
   },
   {
-    "inputs": [
-      { "internalType": "address", "name": "newOwner", "type": "address" }
-    ],
+    "inputs": [{ "internalType": "address", "name": "newOwner", "type": "address" }],
     "name": "transferOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",

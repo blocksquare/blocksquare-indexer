@@ -2,6 +2,7 @@
 ### Edit the template.config.yaml file in the root of the project and run `npm run codegen` to update this file ###
 name: Blocksquare
 preload_handlers: true
+unordered_multichain_mode: true
 field_selection:
   transaction_fields:
     - "hash"
@@ -139,6 +140,8 @@ contracts:
     handler: src/handler/UniswapPoolV2.ts
     events:
       - event: Swap
+      - event: Sync
+      - event: Transfer
   - name: Users
     abi_file_path: abis/Users.json
     handler: src/handler/Users.ts
@@ -155,6 +158,19 @@ contracts:
     handler: src/handler/OneInchPostInteraction.ts
     events:
       - event: PostInteractionOrderFilled
+  - name: PropertyTokenOfferingV2
+    abi_file_path: abis/PropertyTokenOfferingV2.json
+    handler: src/handler/PropertyTokenOfferingV2.ts
+    events:
+      - event: MainSaleAdded
+      - event: PresaleAdded
+      - event: Invested
+      - event: PresaleTokensMinted
+      - event: ClaimInvestment
+      - event: MainSaleCanceled
+      - event: PresaleCanceled
+      - event: MainSaleInvestmentsRefunded
+      - event: PresaleInvestmentsRefunded
   # This is used to index mainnet for price feeds
   - name: PriceFeedRegistry
     abi_file_path: ./abis/PriceFeedRegistry.json
@@ -166,7 +182,6 @@ contracts:
     handler: src/handler/PriceFeedDataHandler.ts
     events:
       - event: AnswerUpdated
-unordered_multichain_mode: true
 networks:
   ### START PRICE FEED SECTION  ###
   # We fetch the prices of BST and other currencies directly from mainnet as they are not available on testnet
@@ -213,6 +228,9 @@ networks:
       - name: PropertyTokenOffering
         address:
           - 0x223aD3AC5Df27F8e062A805A04996F00f1fEAcEb
+      - name: PropertyTokenOfferingV2
+        address:
+          - 0xD7C0593cfF0221E0Aae4E466D79C9AC4f5a160fa
       - name: PropertyFactory
         address:
           - 0x67b899aF3F27072f15f22Bb33E5f1dF2696CAFcB
@@ -221,6 +239,7 @@ networks:
           - 0x0be43Cfd32a91cC277489b547598b6428ef9A584
       - name: PropertyRevenueDistribution
         address:
+          - 0x2fbCff66275e193CfFB6dB6e18278B4A64d74D8f
           - 0xbc9bf93d96096F42364DBD2c2b32a317fd06C8cB
       - name: PropertyStakingPool
         address: [0x9CaE63f8e6b931D269A449A937F742a5d1B3A4A9,0x00C92C11dB2E4229291398000132c3Cfdd4Daac1,0xEA819503da30628F862e1D9F5944aD5d3e347A96]
@@ -233,7 +252,7 @@ networks:
         start_block: 0
       - name: OneInchPostInteraction
         address:
-          - 0xC8B2029bF486c62d2086D767bA1C23b9485da29E
+          - 0xf578feD7b233fca3D227cE9e9A0f60073eE07170
       - name: UniswapPoolV2
         address: [0xc026cBA28A7f94C8Bc16547e979295191b2FD671,0x0E85fB1be698E777F2185350b4A52E5eE8DF51A6]
       - name: UniswapV4PoolManager

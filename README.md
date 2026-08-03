@@ -12,28 +12,33 @@ A high-performance blockchain indexer for the Blocksquare ecosystem, built with 
 ## 🚀 Quick Start
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/blocksquare/blocksquare-indexer.git
 cd blocksquare-indexer
 ```
 
 2. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Configure environment:
+
 ```bash
 cp .env.example .env
 # Defaults to mainnet, change to testnet if needed
 ```
 
 4. Generate configuration:
+
 ```bash
 pnpm run config
 ```
 
 5. Generate types and start indexing:
+
 ```bash
 pnpm run codegen
 pnpm run dev
@@ -42,20 +47,26 @@ pnpm run dev
 ## 🏃 Running the Indexer
 
 ### Development Mode
+
 Run the indexer in development mode with hot reload:
+
 ```bash
 pnpm run dev
 ```
 
 ### Production Mode
+
 Build and start the indexer:
+
 ```bash
 pnpm run build
 pnpm run start
 ```
 
 ### Testing
+
 Run the test suite:
+
 ```bash
 pnpm run test
 ```
@@ -73,15 +84,18 @@ Query indexed data through the GraphQL endpoint:
 ## 🔧 Configuration
 
 ### Networks
+
 - **Mainnet**: Full ecosystem with price feeds
 - **Sepolia Testnet**: Development and testing
 
 ### Environment Variables
+
 See `.env.example` for all configuration options including custom RPC endpoints and API keys.
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please:
+
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes with tests

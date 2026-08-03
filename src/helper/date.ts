@@ -1,7 +1,7 @@
 import { SECONDS_PER_DAY, SECONDS_PER_HOUR } from './constants';
-import dayjs, {Dayjs} from "dayjs";
-import utc from "dayjs/plugin/utc";
-import duration from "dayjs/plugin/duration";
+import dayjs, { Dayjs } from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import duration from 'dayjs/plugin/duration';
 
 dayjs.extend(utc);
 dayjs.extend(duration);
@@ -32,7 +32,7 @@ export const convertUnixToDate = (unixTimestamp: number): Dayjs => {
 };
 
 export const getRangeOfDays = (fromDate: Dayjs, toDate: Dayjs): number => {
-  const from = fromDate.startOf("day");
-  const to = toDate.startOf("day");
-  return Math.abs(from.diff(to, "days")) + 1;
+  const from = fromDate.startOf('day');
+  const to = toDate.startOf('day');
+  return Math.abs(from.diff(to, 'days')) + 1;
 };

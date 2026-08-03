@@ -3,10 +3,7 @@ import { getDay, getHour } from '../helper/date';
 
 PriceDataFeed.AnswerUpdated.handler(async ({ event, context }) => {
   // Returns a list that should always only contain a maximum of one entry
-  const assetPairs =
-    await context.AssetPair.getWhere.latestAggregatorAddress.eq(
-      event.srcAddress
-    );
+  const assetPairs = await context.AssetPair.getWhere.latestAggregatorAddress.eq(event.srcAddress);
 
   /*
     The preRegisterDynamicContracts in PriceFeedRegistry.FeedConfirmed.contractRegister

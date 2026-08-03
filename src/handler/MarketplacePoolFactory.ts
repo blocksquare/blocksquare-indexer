@@ -7,12 +7,11 @@ MarketplacePoolFactory.MarketplacePoolCreated.contractRegister(
   },
   {
     preRegisterDynamicContracts: false,
-  }
+  },
 );
 
-MarketplacePoolFactory.MarketplacePoolCreated.handler(
-  async ({ event, context }) => {
-    /*  const cpWallet = context.Wallet.get(
+MarketplacePoolFactory.MarketplacePoolCreated.handler(async ({ event, context }) => {
+  /*  const cpWallet = context.Wallet.get(
       `${event.chainId}-${event.params.cpWallet}`
     );
     if (!cpWallet)
@@ -24,19 +23,15 @@ MarketplacePoolFactory.MarketplacePoolCreated.handler(
       throw new Error(
         'MarketplacePoolFactoryContract.MarketplacePoolCreated.handler: Certified Partner ID not found'
       ); */
-    const marketplacePool = getNewMarketplacePool(
-      event.chainId,
-      event.params.marketplacePoolAddress
-    );
+  const marketplacePool = getNewMarketplacePool(event.chainId, event.params.marketplacePoolAddress);
 
-    context.MarketplacePool.set({
-      ...marketplacePool,
-      certifiedPartnerUrl: event.params.cpUrl,
-      certifiedPartnerWallet: event.params.cpWallet,
-      certifiedPartnerIdentifier: event.params.cpIdentifier,
-      bsWallet: event.params.bsWallet,
-      tokenName: event.params.tokenName,
-      tokenSymbol: event.params.tokenSymbol,
-    });
-  }
-);
+  context.MarketplacePool.set({
+    ...marketplacePool,
+    certifiedPartnerUrl: event.params.cpUrl,
+    certifiedPartnerWallet: event.params.cpWallet,
+    certifiedPartnerIdentifier: event.params.cpIdentifier,
+    bsWallet: event.params.bsWallet,
+    tokenName: event.params.tokenName,
+    tokenSymbol: event.params.tokenSymbol,
+  });
+});
