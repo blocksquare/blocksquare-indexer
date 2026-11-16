@@ -1,6 +1,7 @@
 import { ZeroAddress } from "ethers";
 import { indexer } from "envio";
 import { getNewWallet } from "../helper/Wallet";
+import { getUniswapV4PoolPositionId } from "../helper/UniswapV4Staking";
 
 indexer.onEvent({ contract: "UniswapV4PositionManager", event: "Transfer" }, async ({ event, context }) => {
   /**
@@ -40,19 +41,11 @@ indexer.onEvent({ contract: "UniswapV4PositionManager", event: "Transfer" }, asy
     context.UniswapV4PositionToken.set(updatedToken);
   } else {
     /**
-     * When new liquidity is added, both:
-     * - Transfer event (NFT mint)
-     * - ModifyLiquidity event (position state update)
-     * gets emitted within the same transaction.
-     *
-     * Since there is no direct on-chain link between:
-     * - NFT Transfer event
-     * - Position liquidity modification event
-     *
-     * The only reliable way to associate an NFT token with its position
-     * lifecycle is by matching events that were emitted in the same transaction.
+     * The PositionManager keeps each NFT's liquidity in a v4 position with salt = bytes32(tokenId),
+     * so the ModifyLiquidity handler keys that position by token id: the link is known here
+     * whatever else the minting transaction does.
      */
-    const uniswapPositionId = `${chainId}-${transactionHash}`;
+    const uniswapPositionId = getUniswapV4PoolPositionId(chainId, tokenId);
 
     const newToken = {
       id: tokenEntityId,

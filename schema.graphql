@@ -630,8 +630,12 @@ type UniswapV4Pool {
 }
 
 type UniswapV4PoolPosition {
-  id: ID! # ${chainId}-${poolId}-${tickLower}-${tickUpper}-${salt}
+  "PositionManager NFT: ${chainId}-${tokenId} (its salt is bytes32(tokenId)). Any other caller: ${chainId}-${poolId}-${sender}-${tickLower}-${tickUpper}-${salt}"
+  id: ID!
+  "Same as id"
   uniqueKey: String! @index
+  "Caller of PoolManager.modifyLiquidity, i.e. the v4 position owner"
+  sender: String!
   chainId: Int!
   tickLower: BigInt!
   tickUpper: BigInt!
@@ -646,7 +650,7 @@ type UniswapV4PoolPosition {
 }
 
 type UniswapV4PoolPositionRecord {
-  id: ID! # ${chainId}-${poolId}-${tickLower}-${tickUpper}-${salt}
+  id: ID! # ${positionId}-${blockNumber}-${logIndex}
   blockNumber: Int!
   blockTimestamp: Int!
   uniqueKey: String! @index
@@ -685,18 +689,29 @@ type StakingPoolV4 {
   maxDays: BigInt!
   minBoost: BigInt!
   maxBoost: BigInt!
+  "Maximum early-withdraw position slash (100000 scale)"
   earlyPositionSlash: BigInt!
+  "Maximum early-withdraw reward slash (100000 scale)"
   earlyRewardSlash: BigInt!
+  "Minimum early-withdraw position slash; unknown (null) until the first EarlyWithdrawSlashRatesUpdated, since LPStakingInit carries only the maximums"
+  earlyMinimumPositionSlash: BigInt
+  "Minimum early-withdraw reward slash; null until the first EarlyWithdrawSlashRatesUpdated"
+  earlyMinimumRewardSlash: BigInt
   createdAtTimestamp: Int!
   creationTransaction: String!
   totalRewardsAdded: BigInt!
   totalRewardsClaimed: BigInt!
   totalRewardsBurned: BigInt!
+  "When staked positions' reward weights were last accrued (seconds). Weight accrues per second in range, not per daily snapshot."
+  lastAccrualTimestamp: Int!
+  "Boost bonus forfeited by early exits since the last tree, added to the next daily run's pool"
+  carryOverReward: BigInt!
   uniswapV4Pool: UniswapV4Pool!
   positions: [StakingPoolV4Position!]! @derivedFrom(field: "pool")
   positionRecords: [StakingPoolV4PositionRecord!]! @derivedFrom(field: "pool")
   historyRecords: [StakingPoolV4Record!]! @derivedFrom(field: "pool")
   cumilativeRewards: [UserCumulativeReward!]! @derivedFrom(field: "stakingPool")
+  rewardTrees: [StakingPoolV4RewardTree!]! @derivedFrom(field: "pool")
 }
 
 type StakingPoolV4Position {
@@ -705,7 +720,11 @@ type StakingPoolV4Position {
   lockedUntil: BigInt!
   timeBoost: BigInt!
   tokenId: BigInt! @index
+  "Epoch of the latest deposit. The contract starts a new reward bucket (tokenId, epoch) on every deposit."
+  epoch: BigInt!
   liquidity: BigInt!
+  "Timestamp of the latest deposit, as the contract stores it. Used to prorate the boost on an early exit."
+  stakingTimestamp: Int!
   isPositionClosed: Boolean!
   updatedAtTimestamp: Int!
   wallet: Wallet!
@@ -713,6 +732,31 @@ type StakingPoolV4Position {
   positionToken: UniswapV4PositionToken
   uniPosition: UniswapV4PoolPosition
   historyRecords: [StakingPoolV4PositionRecord!]! @derivedFrom(field: "stakingPosition")
+}
+
+# One per daily reward run that builds a tree. The operator reads the latest one to call
+# addReward(amount, merkleRoot), where amount = totalCumulativeReward - pool.totalRewardsAdded.
+# Never fund `dailyReward`: it is not what the leaves add, and a tree that only releases held
+# bonus has dailyReward = 0, which addReward rejects.
+type StakingPoolV4RewardTree {
+  id: ID! # ${stakingPoolId}-${blockNumber}
+  chainId: Int!
+  merkleRoot: String! @index
+  blockNumber: Int! @index
+  "Number of leaves: every (tokenId, epoch) reward bucket with a nonzero cumulative reward"
+  leafCount: Int!
+  "Sum of all leaves' cumulative rewards: the total the contract must be funded with once this root is live"
+  totalCumulativeReward: BigInt!
+  "Rewards allocated by this run (today's shares, held-back boost bonus included; at most TOTAL_DAILY_REWARDS plus the pool's carried-over forfeited bonus, minus rounding dust). 0 for a tree that only releases held bonus. Not the amount to fund."
+  dailyReward: BigInt!
+  "Boost bonus held back from the leaves until each deposit's lock is completed; not yet funded"
+  totalPendingBoostReward: BigInt!
+  isPublished: Boolean!
+  publishedAtTimestamp: Int
+  publishedTransactionHash: String
+  "Amount passed to addReward() with this root"
+  publishedAmount: BigInt
+  pool: StakingPoolV4! @index
 }
 
 type StakingPoolV4Record {
@@ -740,6 +784,8 @@ type StakingPoolV4PositionRecord {
   id: ID!
   chainId: Int!
   tokenId: BigInt! @index
+  "Deposit epoch the transaction belongs to"
+  epoch: BigInt!
   transactionType: StakingPoolV4PositionRecordType!
   transactionHash: String!
   rewardsClaimed: BigInt!
@@ -754,7 +800,19 @@ type StakingPoolV4PositionRecord {
 }
 
 type UserCumulativeReward {
-  id: ID! # ${stakingPoolId}-${walletAddress}
+  id: ID! # ${chainId}-${stakingContract}-${tokenId}-${epoch}. One record per deposit of the NFT, matching the contract's per-(tokenId, epoch) claim tracking.
+  tokenId: BigInt! @index
+  epoch: BigInt! @index
+  "Early-withdraw reward slash stored on-chain for this epoch (100000 scale, 17500 = 17.5%). 0 unless the epoch exited early."
+  rewardSlash: BigInt!
+  "Boost bonus earned while locked but not in the leaf yet. Released into cumulativeReward once the lock is completed (prorated on an early exit)."
+  pendingBoostReward: BigInt! @index
+  "Boost bonus dropped on an early exit because the lock was not served. Never enters a leaf and is never funded."
+  forfeitedBoostReward: BigInt!
+  "Capital value in ETH × seconds in range × boost since the last daily run: this deposit's claim on the next day's pool. Reset by the daily run."
+  accruedWeight: BigInt! @index
+  "The same value × seconds at 1x, without the boost. accruedWeight − accruedBaseWeight is the boost part."
+  accruedBaseWeight: BigInt!
   cumulativeReward: BigInt!
   claimed: BigInt!
   burned: BigInt!
@@ -766,9 +824,8 @@ type UserCumulativeReward {
   lastDistributedProof: [String!]!
   lastDistributedMerkleRoot: String!
   isRewardsDistributed: Boolean!
-  distributionSkipped: Boolean!
   wallet: Wallet!
-  stakingPool: StakingPoolV4!
+  stakingPool: StakingPoolV4! @index
   uniPosition: UniswapV4PoolPosition!
 }
 

@@ -17,6 +17,28 @@ export function calculateActiveLiquidity(
   return inRange ? uniPosition.liquidityDelta : 0n;
 }
 
+const Q192 = 2n ** 192n;
+
+/**
+ * Value of an in-range position in currency0 (ETH) at the current price, or 0 when out of range.
+ * The currency1 amount is converted at the pool price, sqrtPriceX96² / 2^192 currency1 per
+ * currency0. That price is in raw units, so token decimals cancel out.
+ *
+ * Unlike raw liquidity, this is the same per unit of capital for a narrow range as for a wide one.
+ */
+export function getActivePositionValue(
+  uniPosition: { tickLower: bigint; tickUpper: bigint; liquidityDelta: bigint },
+  currentTick: bigint,
+  sqrtPriceX96: bigint,
+): bigint {
+  const liquidity = calculateActiveLiquidity(uniPosition, currentTick);
+  if (liquidity === 0n || sqrtPriceX96 === 0n) return 0n;
+  const { tickLower, tickUpper } = uniPosition;
+  const amount0 = getAmount0(tickLower, tickUpper, currentTick, liquidity, sqrtPriceX96);
+  const amount1 = getAmount1(tickLower, tickUpper, currentTick, liquidity, sqrtPriceX96);
+  return amount0 + (amount1 * Q192) / (sqrtPriceX96 * sqrtPriceX96);
+}
+
 // https://github.com/Uniswap/v3-sdk/blob/4e16fe8e56c8c26541545f138c89133794c7ce72/src/entities/position.ts#L68-L127
 export function getAmount0(
   tickLower: bigint,

@@ -27,6 +27,7 @@ contracts:
       - event: Deposit
       - event: Withdraw
       - event: EarlyWithdraw
+      - event: EarlyWithdrawSlashRatesUpdated
       - event: Reward
       - event: RewardsClaimed
       - event: RewardsBurned

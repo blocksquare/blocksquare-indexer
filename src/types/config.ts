@@ -39,6 +39,10 @@ export type Config = {
   uniswapV4PoolManagerAddress: string,
   uniswapV4PositionManagerAddress: string,
   uniswapV4StakingAddress: string,
+  /** Block the UniswapV4Staking contract was deployed at: the daily reward run starts here. */
+  uniswapV4StakingStartBlock: number,
+  /** Staking rewards emitted per 30 days, in wei of the reward token. */
+  uniswapV4StakingMonthlyRewards: bigint,
 };
 
 export type PropertyTokenRevenueDistributionInterval = {

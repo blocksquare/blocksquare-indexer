@@ -40,7 +40,7 @@ describe('UniswapV4PositionManager Transfer', () => {
     indexer = createTestIndexer();
   });
 
-  it('mint creates a position token linked to the same-transaction position and owner wallet', async (t) => {
+  it('mint creates a position token linked to its own v4 position and owner wallet', async (t) => {
     await runEvents(indexer, transferEvent(ZERO, ALICE));
 
     const token = await indexer.UniswapV4PositionToken.getOrThrow(TOKEN_ENTITY_ID);
@@ -48,8 +48,8 @@ describe('UniswapV4PositionManager Transfer', () => {
     t.expect(token.owner).toBe(ALICE);
     t.expect(token.isBurned).toBe(false);
     t.expect(token.mintedTransactionHash).toBe(MINT_TX);
-    // NFT mint and ModifyLiquidity share a transaction, so the position link is the tx hash.
-    t.expect(token.position_id).toBe(`${CHAIN_ID}-${MINT_TX}`);
+    // The PositionManager's v4 position for an NFT has salt = bytes32(tokenId), so it is keyed by token id.
+    t.expect(token.position_id).toBe(`${CHAIN_ID}-${TOKEN_ID}`);
     t.expect(token.wallet_id).toBe(`${CHAIN_ID}-${ALICE}`);
 
     const wallet = await indexer.Wallet.getOrThrow(`${CHAIN_ID}-${ALICE}`);
@@ -71,7 +71,7 @@ describe('UniswapV4PositionManager Transfer', () => {
     t.expect(token.wallet_id).toBe(`${CHAIN_ID}-${BOB}`);
     t.expect(token.isBurned).toBe(false);
     t.expect(token.mintedTransactionHash).toBe(MINT_TX);
-    t.expect(token.position_id).toBe(`${CHAIN_ID}-${MINT_TX}`);
+    t.expect(token.position_id).toBe(`${CHAIN_ID}-${TOKEN_ID}`);
   });
 
   it('burn marks the token as burned and assigns it to the zero-address wallet', async (t) => {

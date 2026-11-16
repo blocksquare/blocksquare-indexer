@@ -1,4 +1,4 @@
-import { getAddress } from 'ethers';
+import { getAddress, parseUnits } from 'ethers';
 import type { Config } from '../types/config';
 import { PropertyStakingPoolType } from '../types/enums';
 
@@ -60,4 +60,7 @@ export const mainnetConfig: Config = {
   uniswapV4PoolManagerAddress: '',
   uniswapV4PositionManagerAddress: '',
   uniswapV4StakingAddress: '',
+  // TODO: set the mainnet deployment block and reward amount before deploying staking on mainnet.
+  uniswapV4StakingStartBlock: 10245814,
+  uniswapV4StakingMonthlyRewards: parseUnits('300', 18),
 };

@@ -1,21 +1,32 @@
 import { getNewWallet } from "../helper/Wallet";
 import { indexer } from "envio";
-import type { UserCumulativeReward } from "envio";
+import type { EvmEvent, EvmOnEventContext } from "envio";
 import { getDay, getHour } from "../helper/date";
 import { getLoadedConfig } from "../config";
-import { ethers, id } from "ethers";
 import {
-  BOOST_PRECISION,
   buildMerkleTree,
+  compareRewardBuckets,
   computeV4PoolId,
   getPredictedDailyBlockCount,
-  getUniswapV4StakingDeployementBlock,
   TOTAL_DAILY_REWARDS,
 } from "../helper/UniswapV4Helpers/utils";
-import { calculateActiveLiquidity } from "../helper/UniswapV4Helpers/liquidityAmounts";
+import { getBlockTimestamp } from "../helper/blockTimestamp";
 import { StakingPoolV4PositionRecordType } from "../types/enums";
+import {
+  accrueStakingWeights,
+  getReleasableBoostReward,
+  getRewardRecordId,
+  getStakingPoolId,
+  getStakingPositionId,
+  recordRewardPayout,
+  writeStakingHistoryRecord,
+} from "../helper/UniswapV4Staking";
 
-const { uniswapV4StakingAddress, chainId: loadedChainId } = getLoadedConfig();
+const {
+  uniswapV4StakingAddress,
+  uniswapV4StakingStartBlock,
+  chainId: loadedChainId,
+} = getLoadedConfig();
 
 indexer.onEvent({ contract: "UniswapV4Staking", event: "LPStakingInit" }, async ({ event, context }) => {
   /**
@@ -67,35 +78,67 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "LPStakingInit" }, async 
   const uniV4PoolEntityId = `${chainId}-${poolId}`;
 
   const exitsingUniV4Pool = await context.UniswapV4Pool.get(uniV4PoolEntityId);
+  if (!exitsingUniV4Pool) {
+    // The pool's Initialize must be indexed before the staking contract's initialize, or no staking
+    // pool is created and nothing of this contract is indexed. Nothing retries it.
+    context.log.error(
+      `LPStakingInit: target pool ${uniV4PoolEntityId} is not indexed, staking pool ${contractAddress} not created`,
+    );
+    return;
+  }
 
-  if (exitsingUniV4Pool) {
-    const stakingPoolEntityId = `${chainId}-${contractAddress}`;
-    const existingContract =
-      await context.StakingPoolV4.get(stakingPoolEntityId);
+  const stakingPoolEntityId = getStakingPoolId(chainId, contractAddress);
+  const existingContract =
+    await context.StakingPoolV4.get(stakingPoolEntityId);
 
-    if (!existingContract) {
-      context.StakingPoolV4.set({
-        id: stakingPoolEntityId,
-        chainId,
-        contractAddress,
-        positionManager,
-        targetPoolKey: poolId,
-        minDays,
-        maxDays,
-        minBoost,
-        maxBoost,
-        earlyPositionSlash,
-        earlyRewardSlash,
-        totalRewardsAdded: 0n,
-        totalRewardsClaimed: 0n,
-        totalRewardsBurned: 0n,
-        createdAtTimestamp: timestamp,
-        creationTransaction: transactionHash,
-        uniswapV4Pool_id: exitsingUniV4Pool.id,
-      });
-    }
+  if (!existingContract) {
+    context.StakingPoolV4.set({
+      id: stakingPoolEntityId,
+      chainId,
+      contractAddress,
+      positionManager,
+      targetPoolKey: poolId,
+      minDays,
+      maxDays,
+      minBoost,
+      maxBoost,
+      // LPStakingInit carries only the maximum slash rates; the minimums arrive with the first
+      // EarlyWithdrawSlashRatesUpdated.
+      earlyPositionSlash,
+      earlyRewardSlash,
+      earlyMinimumPositionSlash: undefined,
+      earlyMinimumRewardSlash: undefined,
+      totalRewardsAdded: 0n,
+      totalRewardsClaimed: 0n,
+      totalRewardsBurned: 0n,
+      lastAccrualTimestamp: timestamp,
+      carryOverReward: 0n,
+      createdAtTimestamp: timestamp,
+      creationTransaction: transactionHash,
+      uniswapV4Pool_id: exitsingUniV4Pool.id,
+    });
   }
 });
+
+indexer.onEvent(
+  { contract: "UniswapV4Staking", event: "EarlyWithdrawSlashRatesUpdated" },
+  async ({ event, context }) => {
+    const stakingPool = await context.StakingPoolV4.get(
+      getStakingPoolId(event.chainId, event.srcAddress),
+    );
+    if (!stakingPool) return;
+
+    const { minimumPositionSlash, maximumPositionSlash, minimumRewardSlash, maximumRewardSlash } =
+      event.params;
+    context.StakingPoolV4.set({
+      ...stakingPool,
+      earlyPositionSlash: maximumPositionSlash,
+      earlyRewardSlash: maximumRewardSlash,
+      earlyMinimumPositionSlash: minimumPositionSlash,
+      earlyMinimumRewardSlash: minimumRewardSlash,
+    });
+  },
+);
 
 indexer.onEvent({ contract: "UniswapV4Staking", event: "Deposit" }, async ({ event, context }) => {
   /**
@@ -110,201 +153,197 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "Deposit" }, async ({ eve
    * - Locked liquidity
    * - Lock duration
    * - Boost multipliers
+   * - The deposit's epoch: every deposit starts a new, empty reward bucket (tokenId, epoch)
    */
 
   const {
     chainId,
     srcAddress: stakingContractAddress,
-    transaction: { hash: transactionHash },
-    block: { timestamp, number: blockNumber },
-    logIndex,
+    block: { timestamp },
   } = event;
-  const { owner, tokenId, liquidity, lockedUntil, timeBoost } = event.params;
+  const { owner, tokenId, epoch, liquidity, lockedUntil, timeBoost } = event.params;
 
   /**
    * Get or create wallet entity for the staking user.
    */
-  const wallet = await context.Wallet.getOrCreate(
-    getNewWallet(event.chainId, owner),
-  );
-
-  /**
-   * Find the associated Uniswap V4 NFT position token.
-   */
-  const uniTokenEntityId = `${chainId}-${tokenId}`;
-  const existingUniToken =
-    await context.UniswapV4PositionToken.get(uniTokenEntityId);
+  const wallet = await context.Wallet.getOrCreate(getNewWallet(chainId, owner));
 
   /**
    * Only process staking logic if NFT position token exists.
    * This guarantees staking state is always linked to a valid liquidity position.
    */
-  if (existingUniToken) {
-    const stakingPoolEntityId = `${chainId}-${stakingContractAddress}`;
-    const positionEntityId = `${chainId}-${owner}-${tokenId}`;
-    const existingStakingPosition =
-      await context.StakingPoolV4Position.get(positionEntityId);
+  const positionToken = await context.UniswapV4PositionToken.get(`${chainId}-${tokenId}`);
+  if (!positionToken) return;
 
-    if (existingStakingPosition) {
-      context.StakingPoolV4Position.set({
-        ...existingStakingPosition,
-        lockedUntil,
-        positionToken_id: existingUniToken.id,
-        liquidity,
-        timeBoost,
-        isPositionClosed: false,
-        updatedAtTimestamp: timestamp,
-      });
-    } else {
-      context.StakingPoolV4Position.set({
-        id: positionEntityId,
-        chainId,
-        lockedUntil,
-        tokenId,
-        liquidity,
-        timeBoost,
-        isPositionClosed: false,
-        updatedAtTimestamp: timestamp,
-        wallet_id: wallet.id,
-        pool_id: stakingPoolEntityId,
-        positionToken_id: existingUniToken.id,
-        uniPosition_id: existingUniToken.position_id,
-      });
-    }
-    const { id: hourId, start: hourStart } = getHour(event.block.timestamp);
-    const { start: dayStart } = getDay(event.block.timestamp);
+  // Close the interval before this deposit changes the set of earning positions.
+  await accrueStakingWeights(context, { chainId, now: timestamp, blockNumber: event.block.number });
 
-    context.StakingPoolV4PositionRecord.set({
-      id: `${stakingPoolEntityId}-${existingUniToken.tokenId}-${hourId}-${logIndex}`,
-      transactionHash,
-      chainId,
-      dayStartTimestamp: dayStart,
-      blockTimestamp: timestamp,
-      blockNumber,
-      tokenId,
-      pool_id: stakingPoolEntityId,
-      rewardsClaimed: 0n,
-      rewardsBurned: 0n,
-      transactionType: StakingPoolV4PositionRecordType.DEPOSIT,
-      stakingPosition_id: positionEntityId,
-      wallet_id: wallet.id
-    });
+  const stakingPoolId = getStakingPoolId(chainId, stakingContractAddress);
+  const stakingPositionId = getStakingPositionId(chainId, owner, tokenId);
+
+  // Creates the position, or reopens it with the new terms when the same owner re-deposits.
+  context.StakingPoolV4Position.set({
+    id: stakingPositionId,
+    chainId,
+    tokenId,
+    epoch,
+    lockedUntil,
+    liquidity,
+    timeBoost,
+    stakingTimestamp: timestamp,
+    isPositionClosed: false,
+    updatedAtTimestamp: timestamp,
+    wallet_id: wallet.id,
+    pool_id: stakingPoolId,
+    positionToken_id: positionToken.id,
+    uniPosition_id: positionToken.position_id,
+  });
+
+  /**
+   * The NFT's reward records of earlier epochs now belong to the new staker: unclaimed
+   * rewards follow the NFT. No record is created for the new epoch here; the daily run
+   * creates it when this deposit first earns.
+   */
+  const rewardRecords = await context.UserCumulativeReward.getWhere({
+    tokenId: { _eq: tokenId },
+    stakingPool_id: { _eq: stakingPoolId },
+  });
+  for (const rewardRecord of rewardRecords) {
+    context.UserCumulativeReward.set({ ...rewardRecord, wallet_id: wallet.id });
   }
+
+  writeStakingHistoryRecord(context, event, {
+    tokenId,
+    epoch,
+    transactionType: StakingPoolV4PositionRecordType.DEPOSIT,
+    pool_id: stakingPoolId,
+    stakingPosition_id: stakingPositionId,
+    wallet_id: wallet.id,
+  });
 });
 
-indexer.onEvent({ contract: "UniswapV4Staking", event: "Withdraw" }, async ({ event, context }) => {
-  /**
-   * Withdraw event is emitted when a user unstakes their liquidity position NFT.
-   *
-   * This event updates staking state by:
-   * - Closing staking position lifecycle
-   * - Historical activity tracking
-   */
-
+/**
+ * Shared body of the Withdraw and EarlyWithdraw handlers: closes the staking position and
+ * writes a history record. `epoch` defaults to the position's current epoch, since Withdraw
+ * carries none: a normal withdraw always ends the current epoch.
+ */
+const closeStakingPosition = async (
+  event:
+    | EvmEvent<"UniswapV4Staking", "Withdraw">
+    | EvmEvent<"UniswapV4Staking", "EarlyWithdraw">,
+  context: EvmOnEventContext,
+  transactionType:
+    | StakingPoolV4PositionRecordType.WITHDRAW
+    | StakingPoolV4PositionRecordType.EARLY_WITHDRAW,
+  epoch?: bigint,
+) => {
   const {
     chainId,
-    transaction: { hash: transactionHash },
-    srcAddress: stakingContractAddress,
     block: { timestamp, number: blockNumber },
-    logIndex,
+    params: { owner, tokenId },
   } = event;
-  const { owner, tokenId } = event.params;
 
-  const stakingPositionEntityId = `${chainId}-${owner}-${tokenId}`;
-  const stakingPosition = await context.StakingPoolV4Position.get(
-    stakingPositionEntityId,
-  );
+  // Credit the position for its time in range up to this exit, while it still counts as open.
+  await accrueStakingWeights(context, { chainId, now: timestamp, blockNumber });
 
-  if (stakingPosition) {
-    /**
-     * Mark staking position as closed since liquidity is withdrawn.
-     */
-    context.StakingPoolV4Position.set({
-      ...stakingPosition,
-      isPositionClosed: true,
-      updatedAtTimestamp: timestamp,
-    });
+  const stakingPositionId = getStakingPositionId(chainId, owner, tokenId);
+  const stakingPosition = await context.StakingPoolV4Position.get(stakingPositionId);
+  if (!stakingPosition) return;
 
-    const { id: hourId, start: hourStart } = getHour(event.block.timestamp);
-    const { start: dayStart } = getDay(event.block.timestamp);
+  context.StakingPoolV4Position.set({
+    ...stakingPosition,
+    isPositionClosed: true,
+    updatedAtTimestamp: timestamp,
+  });
 
-    const stakingContractId = `${chainId}-${stakingContractAddress}`;
+  writeStakingHistoryRecord(context, event, {
+    tokenId,
+    epoch: epoch ?? stakingPosition.epoch,
+    transactionType,
+    pool_id: stakingPosition.pool_id,
+    stakingPosition_id: stakingPositionId,
+    wallet_id: stakingPosition.wallet_id,
+  });
+};
 
-    context.StakingPoolV4PositionRecord.set({
-      id: `${stakingPosition.pool_id}-${tokenId}-${hourId}-${logIndex}`,
-      transactionHash,
-      chainId,
-      dayStartTimestamp: dayStart,
-      blockTimestamp: timestamp,
-      blockNumber,
-      tokenId,
-      rewardsClaimed: 0n,
-      rewardsBurned: 0n,
-      transactionType: StakingPoolV4PositionRecordType.WITHDRAW,
-      pool_id: stakingContractId,
-      stakingPosition_id: stakingPositionEntityId,
-      wallet_id: `${chainId}-${owner}`
-    });
-  }
-});
+/**
+ * Withdraw event is emitted when a user unstakes their liquidity position NFT
+ * after the lock period.
+ */
+indexer.onEvent({ contract: "UniswapV4Staking", event: "Withdraw" }, ({ event, context }) =>
+  closeStakingPosition(event, context, StakingPoolV4PositionRecordType.WITHDRAW),
+);
 
 indexer.onEvent({ contract: "UniswapV4Staking", event: "EarlyWithdraw" }, async ({ event, context }) => {
   /**
    * EarlyWithdraw event is emitted when a user withdraws liquidity
    * before the staking lock period is completed.
    *
-   * Early withdrawals usually trigger:
+   * Early withdrawals trigger:
    * - Position lifecycle closure
-   * - Potential penalty / slash logic (handled on contract side)
+   * - A position slash: `positionSlash` is an amount of liquidity sent to the treasury
+   * - A reward slash: `rewardSlash` is a rate (100000 scale) stored on-chain for this epoch,
+   *   applied to every later claim of the epoch
+   * - The held boost bonus is cut to what the days actually served earned; the rest goes back
+   *   into the next daily pool
    * - Historical activity tracking
    */
-
   const {
     chainId,
-    transaction: { hash: transactionHash },
-    srcAddress: stakingContractAddress,
     block: { timestamp, number: blockNumber },
-    logIndex,
   } = event;
-  const { owner, tokenId } = event.params;
+  const { owner, tokenId, epoch, rewardSlash } = event.params;
 
-  const stakingPositionEntityId = `${chainId}-${owner}-${tokenId}`;
+  // Credit the time in range up to this exit first, so its boost is prorated below too.
+  await accrueStakingWeights(context, { chainId, now: timestamp, blockNumber });
 
-  const stakingPosition = await context.StakingPoolV4Position.get(
-    stakingPositionEntityId,
+  // A deposit that was never in range has no record: nothing to slash or prorate.
+  const rewardRecord = await context.UserCumulativeReward.get(
+    getRewardRecordId(getStakingPoolId(chainId, event.srcAddress), tokenId, epoch),
   );
+  if (rewardRecord) {
+    const position = await context.StakingPoolV4Position.get(
+      getStakingPositionId(chainId, owner, tokenId),
+    );
+    const pool = position && (await context.StakingPoolV4.get(position.pool_id));
 
-  if (stakingPosition) {
-    /**
-     * Mark position as closed since liquidity is withdrawn early.
-     */
-    context.StakingPoolV4Position.set({
-      ...stakingPosition,
-      isPositionClosed: true,
-      updatedAtTimestamp: timestamp,
+    // Keep only the boost bonus the days served earned; the rest is forfeited and never enters a
+    // leaf. That applies to the bonus already held and to the boost part of the weight accrued
+    // since the last run. What is left of pendingBoostReward is released by the next daily run.
+    const prorate = (bonus: bigint) =>
+      position && pool
+        ? getReleasableBoostReward({
+            pending: bonus,
+            timeBoost: position.timeBoost,
+            stakingTimestamp: position.stakingTimestamp,
+            exitTimestamp: timestamp,
+            pool,
+          })
+        : bonus;
+    const pending = rewardRecord.pendingBoostReward;
+    const releasable = prorate(pending);
+    const accruedBonusWeight = rewardRecord.accruedWeight - rewardRecord.accruedBaseWeight;
+
+    const forfeited = pending - releasable;
+
+    context.UserCumulativeReward.set({
+      ...rewardRecord,
+      // Stored so the UI can show the epoch's slash without an RPC call.
+      rewardSlash,
+      pendingBoostReward: releasable,
+      forfeitedBoostReward: rewardRecord.forfeitedBoostReward + forfeited,
+      accruedWeight: rewardRecord.accruedBaseWeight + prorate(accruedBonusWeight),
     });
 
-    const { id: hourId, start: hourStart } = getHour(event.block.timestamp);
-    const { start: dayStart } = getDay(event.block.timestamp);
-
-    const stakingContractId = `${chainId}-${stakingContractAddress}`;
-
-    context.StakingPoolV4PositionRecord.set({
-      id: `${stakingPosition.pool_id}-${tokenId}-${hourId}-${logIndex}`,
-      transactionHash,
-      chainId,
-      dayStartTimestamp: dayStart,
-      blockTimestamp: timestamp,
-      blockNumber,
-      tokenId,
-      rewardsClaimed: 0n,
-      rewardsBurned: 0n,
-      transactionType: StakingPoolV4PositionRecordType.EARLY_WITHDRAW,
-      pool_id: stakingContractId,
-      stakingPosition_id: stakingPositionEntityId,
-      wallet_id: `${chainId}-${owner}`
-    });
+    // The forfeited bonus was taken from the other stakers' shares on the days it was held, so it
+    // goes back to them: the next daily run adds it to its pool. The cut accrued weight needs no
+    // carry-over: it simply weighs less in that run's split.
+    if (pool && forfeited > 0n) {
+      context.StakingPoolV4.set({ ...pool, carryOverReward: pool.carryOverReward + forfeited });
+    }
   }
+
+  await closeStakingPosition(event, context, StakingPoolV4PositionRecordType.EARLY_WITHDRAW, epoch);
 });
 
 indexer.onBlock(
@@ -315,7 +354,7 @@ indexer.onBlock(
       return {
         block: {
           number: {
-            _gte: getUniswapV4StakingDeployementBlock(loadedChainId),
+            _gte: uniswapV4StakingStartBlock,
             _every: getPredictedDailyBlockCount(loadedChainId),
           },
         },
@@ -326,161 +365,177 @@ indexer.onBlock(
     /**
      * DailyRewards Handler
      * ---------------------
-     * This onBlock handler runs once per day (based on chain block time) to calculate
-     * cumulative rewards for all active staked positions in the Uniswap V4 staking pool.
+     * This onBlock handler runs once per day (based on chain block time) and builds the
+     * reward Merkle tree for the Uniswap V4 staking pool.
      *
-     * It computes each user's share of the daily reward pool based on the active liquidity
-     * (in-range positions) of their staked Uniswap V4 position. A Merkle tree is built
-     * from the cumulative rewards (tokenId + cumulativeReward) and the root is stored.
-     * Each user's cumulative reward record is updated with the new total and linked to
-     * the current Merkle root. These records are later marked as distributed when the
-     * `Reward` event is emitted.
+     * Today's reward pool (the daily emission plus boost bonus forfeited by early exits since the
+     * last tree) is split by the weight each deposit accrued since the last run:
+     * capital value in ETH × seconds in range, boosted while locked (see accrueStakingWeights). Weight
+     * accrues on every swap, liquidity change, deposit and withdrawal, so a deposit earns for
+     * the time it was actually in range, including one that closed during the day. Each share
+     * goes to that deposit's record (one per (tokenId, epoch)). Only the 1x base of a share
+     * goes into the leaf; the boost bonus is held in pendingBoostReward until the deposit's
+     * lock is completed, so leaving early can't keep a boost that wasn't earned. The tree covers
+     * every deposit that has ever earned: records that didn't earn today carry forward
+     * unchanged, because the contract only accepts proofs against its latest root. Every record
+     * in the tree is rewritten with the new root and its proof, and later marked as distributed
+     * when the `Reward` event publishes that root.
      */
 
     if (context.isPreload) return;
 
-    const STAKING_POOL_ENTITY_ID = `${loadedChainId}-${uniswapV4StakingAddress}`;
+    const STAKING_POOL_ENTITY_ID = getStakingPoolId(loadedChainId, uniswapV4StakingAddress);
 
-    // Fetch staking pool and associated Uniswap pool. If either doesn't exist, we cannot calculate rewards.
     const stakingPool = await context.StakingPoolV4.get(STAKING_POOL_ENTITY_ID);
     if (!stakingPool) return;
 
-    const uniV4Pool = await context.UniswapV4Pool.get(
-      stakingPool.uniswapV4Pool_id,
-    );
-    if (!uniV4Pool) return;
+    const activeStakedPositions = await context.StakingPoolV4Position.getWhere({
+      pool_id: { _eq: STAKING_POOL_ENTITY_ID },
+      isPositionClosed: { _eq: false },
+    });
+    const accruedRecordsSoFar = await context.UserCumulativeReward.getWhere({
+      stakingPool_id: { _eq: STAKING_POOL_ENTITY_ID },
+      accruedWeight: { _gt: 0n },
+    });
+    const recordsHoldingBonus = await context.UserCumulativeReward.getWhere({
+      stakingPool_id: { _eq: STAKING_POOL_ENTITY_ID },
+      pendingBoostReward: { _gt: 0n },
+    });
+    // Nothing staked, nothing earned since the last run and no held bonus to release.
+    if (
+      activeStakedPositions.length === 0 &&
+      accruedRecordsSoFar.length === 0 &&
+      recordsHoldingBonus.length === 0
+    ) {
+      return;
+    }
 
-    // Fetch all open staked positions for this pool in a single multi-field query.
-    const activeStakedPositions = [
-      ...(await context.StakingPoolV4Position.getWhere({
-        pool_id: { _eq: STAKING_POOL_ENTITY_ID },
-        isPositionClosed: { _eq: false },
-      })),
-    ].sort((a, b) => a.updatedAtTimestamp - b.updatedAtTimestamp);
-    if (activeStakedPositions.length === 0) return;
-
-    const uniPositions = await context.UniswapV4PoolPosition.getWhere({
-      pool_id: { _eq: uniV4Pool.id },
+    // Block handlers only receive the block number, so the run's timestamp is read from the chain.
+    const now = await context.effect(getBlockTimestamp, {
+      chainId: loadedChainId,
+      blockNumber: block.number,
     });
 
-    // Compute total active liquidity and build list of eligible positions.
-    // Only positions that are in-range (active liquidity > 0) qualify for rewards.
-    let totalEffectiveLiquidity = 0n;
-    const rewardCandidates: Array<{
-      stakedPosition: (typeof activeStakedPositions)[0];
-      uniPosition: (typeof uniPositions)[0];
-      effectiveLiquidity: bigint;
-      cumulativeReward: bigint;
-      existingRewardData?: UserCumulativeReward;
-    }> = [];
+    // Close the day: accrue every open position up to this block.
+    await accrueStakingWeights(context, { chainId: loadedChainId, now, blockNumber: block.number });
 
-    for (const stakedPosition of activeStakedPositions) {
-      const uniPosition = uniPositions.find(
-        (p) => p.id === stakedPosition.uniPosition_id,
-      );
-      if (!uniPosition) continue;
+    // Reloaded: accruing just moved its clock.
+    const accruedPool = (await context.StakingPoolV4.get(STAKING_POOL_ENTITY_ID)) ?? stakingPool;
+    // Today's emission plus the boost bonus forfeited by early exits since the last tree.
+    const dailyPool = TOTAL_DAILY_REWARDS + accruedPool.carryOverReward;
 
-      // Determine if the position is currently in-range.
-      const activeLiquidity = calculateActiveLiquidity(
-        uniPosition,
-        uniV4Pool.tick,
-      );
-      if (activeLiquidity === 0n) continue; // skip out-of-range positions
+    const earningRecords = await context.UserCumulativeReward.getWhere({
+      stakingPool_id: { _eq: STAKING_POOL_ENTITY_ID },
+      accruedWeight: { _gt: 0n },
+    });
+    const totalWeight = earningRecords.reduce((sum, record) => sum + record.accruedWeight, 0n);
 
-      // Apply time-based boost to active liquidity.
-      // `timeBoost` is expressed as a percentage with base 100 (e.g. 100 = 1.0x, 122 = 1.22x).
-      // This increases a position's reward share proportionally to its lock duration.
-      // Effective liquidity = active liquidity × boost multiplier.
-      const effectiveLiquidity =
-        (activeLiquidity * stakedPosition.timeBoost) / BOOST_PRECISION;
-
-      totalEffectiveLiquidity += effectiveLiquidity;
-      rewardCandidates.push({
-        cumulativeReward: 0n, // will be set after cumulative calculation
-        stakedPosition,
-        uniPosition,
-        effectiveLiquidity,
-      });
+    // Today's earners, keyed by reward record ID, with their share of the daily pool. `base` is
+    // the part the share would be at 1x; the rest (share − base) is the boost bonus.
+    const earners = new Map<string, { share: bigint; base: bigint }>();
+    for (const record of earningRecords) {
+      const share = (dailyPool * record.accruedWeight) / totalWeight;
+      const base = (share * record.accruedBaseWeight) / record.accruedWeight;
+      earners.set(record.id, { share, base });
     }
 
-    // If no positions are in-range, no rewards to distribute.
-    if (totalEffectiveLiquidity === 0n) return;
+    // Deposits still staked and locked keep their boost bonus held back. Every other deposit
+    // (lock completed, withdrawn, or exited early and already prorated) gets it released.
+    const nowBigInt = BigInt(now);
+    const lockedRecordIds = new Set(
+      activeStakedPositions
+        .filter((position) => nowBigInt < position.lockedUntil)
+        .map((position) => getRewardRecordId(STAKING_POOL_ENTITY_ID, position.tokenId, position.epoch)),
+    );
 
-    // Calculate cumulative rewards and build merkle tree leaves
-    const merkleLeaves: Array<{ tokenId: bigint; cumulativeReward: bigint }> =
-      [];
+    // The contract only accepts proofs against the latest root, so every deposit that has
+    // ever earned must be in every tree: today's earners plus every existing record,
+    // including earlier epochs and withdrawn, out-of-range and resold positions (carried
+    // forward unchanged).
+    const existingRecords = await context.UserCumulativeReward.getWhere({
+      stakingPool_id: { _eq: STAKING_POOL_ENTITY_ID },
+    });
 
-    for (const candidate of rewardCandidates) {
-      const rewardAmount =
-        (TOTAL_DAILY_REWARDS * candidate.effectiveLiquidity) /
-        totalEffectiveLiquidity;
+    // New totals: the base of today's share goes into the leaf, the bonus into pendingBoostReward,
+    // and a deposit that is no longer locked gets all of its pending bonus moved into the leaf.
+    // Earners' accrued weight is used up. Totals only change here, together with the tree, so a
+    // record's proof always matches it.
+    let totalReleased = 0n;
+    const mergedRecords = existingRecords.map((record) => {
+      const earner = earners.get(record.id);
+      const pending = record.pendingBoostReward + (earner ? earner.share - earner.base : 0n);
+      const released = lockedRecordIds.has(record.id) ? 0n : pending;
+      totalReleased += released;
+      return {
+        ...record,
+        cumulativeReward: record.cumulativeReward + (earner?.base ?? 0n) + released,
+        pendingBoostReward: pending - released,
+        accruedWeight: earner ? 0n : record.accruedWeight,
+        accruedBaseWeight: earner ? 0n : record.accruedBaseWeight,
+      };
+    });
 
-      // The staking position ID (chainId-owner-tokenId) is all we need for the cumulative reward data too
-      const userRewardId = candidate.stakedPosition.id;
+    // No staked position was in range since the last run and no held bonus became claimable:
+    // nothing changes, so don't publish a new root. The previous one stays valid on-chain.
+    // A day with nobody in range still builds a tree when a lock ended or a staker left, or
+    // their held bonus would wait for someone else to earn.
+    if (earners.size === 0 && totalReleased === 0n) return;
 
-      const existingRewardData =
-        await context.UserCumulativeReward.get(userRewardId);
-      const cumulativeReward =
-        (existingRewardData?.cumulativeReward ?? 0n) + rewardAmount;
+    // Records with a zero total have nothing to claim and get no leaf.
+    // Sorted by (tokenId, epoch) so the same state always produces the same root.
+    const updatedRecords = mergedRecords
+      .filter((record) => record.cumulativeReward > 0n)
+      .sort(compareRewardBuckets);
 
-      candidate.existingRewardData = existingRewardData;
-      candidate.cumulativeReward = cumulativeReward;
-
-      // Each leaf in the Merkle tree is the hash of (tokenId, cumulativeReward).
-      merkleLeaves.push({
-        tokenId: candidate.stakedPosition.tokenId,
-        cumulativeReward,
-      });
-    }
-
-    // Build Merkle tree from leaves and obtain the root.
-    // The root will be stored with each cumulative reward record and later
-    // used in the on-chain reward distribution event.
-    const { root: merkleRoot, tree } = buildMerkleTree(merkleLeaves);
-
-    for (const candidate of rewardCandidates) {
-      const leaf = ethers.keccak256(
-        ethers.AbiCoder.defaultAbiCoder().encode(
-          ["uint256", "uint256"],
-          [candidate.stakedPosition.tokenId, candidate.cumulativeReward],
-        ),
-      );
-      const proof = tree.getHexProof(leaf);
-
-      if (candidate.existingRewardData) {
-        context.UserCumulativeReward.set({
-          ...candidate.existingRewardData,
-          cumulativeReward: candidate.cumulativeReward,
-          updatedAtTimestamp: 0,
-          merkleRoot,
-          isRewardsDistributed: false,
-          distributionSkipped: false,
-          blockNumber: block.number,
-          stakingPool_id: STAKING_POOL_ENTITY_ID,
-          uniPosition_id: candidate.uniPosition.id,
-          proof,
-        });
-      } else {
-        context.UserCumulativeReward.set({
-          id: candidate.stakedPosition.id,
-          cumulativeReward: candidate.cumulativeReward,
-          lastDistributedCumulativeReward: 0n,
-          updatedAtTimestamp: 0,
-          merkleRoot,
-          lastDistributedMerkleRoot: "",
-          isRewardsDistributed: false,
-          distributionSkipped: false,
-          blockNumber: block.number,
-          wallet_id: candidate.stakedPosition.wallet_id,
-          stakingPool_id: STAKING_POOL_ENTITY_ID,
-          uniPosition_id: candidate.uniPosition.id,
-          proof,
-          lastDistributedProof: [],
-          claimed: 0n,
-          burned: 0n,
-        });
+    // Earners without a leaf yet (everything so far is held-back bonus, or a share that rounded
+    // to 0) still need their used-up weight and held bonus saved.
+    for (const record of mergedRecords) {
+      if (record.cumulativeReward === 0n && earners.has(record.id)) {
+        context.UserCumulativeReward.set(record);
       }
     }
+
+    // Each leaf in the Merkle tree is the hash of (tokenId, epoch, cumulativeReward). Held-back
+    // bonus is not in any leaf, so the operator doesn't fund it until it is released.
+    const { root: merkleRoot, proofs } = buildMerkleTree(updatedRecords);
+
+    // Rewrite every record in the tree with the new root and a fresh proof, marked pending
+    // (updatedAtTimestamp = 0) until the `Reward` event publishes this root.
+    // `proofs[i]` belongs to `updatedRecords[i]`.
+    for (const [index, record] of updatedRecords.entries()) {
+      context.UserCumulativeReward.set({
+        ...record,
+        updatedAtTimestamp: 0,
+        merkleRoot,
+        proof: proofs[index]!,
+        isRewardsDistributed: false,
+        blockNumber: block.number,
+      });
+    }
+
+    // Someone earned today, so the carried-over bonus went into their shares. With no earners it
+    // waits for the next run that has some.
+    if (earners.size > 0 && accruedPool.carryOverReward > 0n) {
+      context.StakingPoolV4.set({ ...accruedPool, carryOverReward: 0n });
+    }
+
+    // One entity per tree, so the operator can read the latest root and how much it needs
+    // funding with a single query.
+    context.StakingPoolV4RewardTree.set({
+      id: `${STAKING_POOL_ENTITY_ID}-${block.number}`,
+      chainId: loadedChainId,
+      merkleRoot,
+      blockNumber: block.number,
+      leafCount: updatedRecords.length,
+      totalCumulativeReward: updatedRecords.reduce((sum, r) => sum + r.cumulativeReward, 0n),
+      dailyReward: [...earners.values()].reduce((sum, e) => sum + e.share, 0n),
+      totalPendingBoostReward: mergedRecords.reduce((sum, r) => sum + r.pendingBoostReward, 0n),
+      isPublished: false,
+      publishedAtTimestamp: undefined,
+      publishedTransactionHash: undefined,
+      publishedAmount: undefined,
+      pool_id: STAKING_POOL_ENTITY_ID,
+    });
   },
 );
 
@@ -492,24 +547,26 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "Reward" }, async ({ even
    *
    * This handler:
    * 1. Updates the staking pool's total rewards added.
-   * 2. Records an hourly/daily aggregate record for the pool.
-   * 3. Marks all pending cumulative reward records as either distributed (if their merkle root matches)
-   *    or skipped (if they belong to a different root). Pending records are those with updatedAtTimestamp = 0.
+   * 2. Records one pool record per Reward event, with its hour and day for grouping.
+   * 3. Marks the reward tree with this root as published.
+   * 4. Marks the pending cumulative reward records of this root as distributed; records of other
+   *    roots stay pending.
    */
   const {
     chainId,
-    block: { timestamp },
+    block: { timestamp, number: blockNumber },
+    logIndex,
     params: { merkleRoot, amount },
     srcAddress: stakingContractAddress,
     transaction: { hash },
   } = event;
 
-  const stakingEntityId = `${chainId}-${stakingContractAddress}`;
+  const stakingEntityId = getStakingPoolId(chainId, stakingContractAddress);
 
   const stakingPool = await context.StakingPoolV4.get(stakingEntityId);
   if (!stakingPool) return;
 
-  const { id: hourId, start: hourStart } = getHour(timestamp);
+  const { start: hourStart } = getHour(timestamp);
   const { start: dayStart } = getDay(timestamp);
 
   const updatedTotalRewards = stakingPool.totalRewardsAdded + amount;
@@ -519,7 +576,7 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "Reward" }, async ({ even
   });
 
   context.StakingPoolV4Record.set({
-    id: `${stakingPool.id}-${hourId}`,
+    id: `${stakingPool.id}-${blockNumber}-${logIndex}`,
     chainId,
     dayStartTimestamp: dayStart,
     hourStartTimestamp: hourStart,
@@ -529,211 +586,49 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "Reward" }, async ({ even
     merkleRoot,
   });
 
-  // Fetch all pending cumulative reward records.
-  // A pending record has updatedAtTimestamp = 0, meaning it was created
-  // by a daily rewards calculation but not yet marked as distributed.
-  // - `lastDistributedCumulativeReward` / `lastDistributedMerkleRoot` store the values from the most recent
-  // successful distribution for this user. This provides a fallback for the frontend if the latest
-  // cumulative reward (from a daily calculation) has not yet been distributed on-chain.
+  // Mark the tree this root came from as published.
+  const publishedTrees = await context.StakingPoolV4RewardTree.getWhere({
+    merkleRoot: { _eq: merkleRoot },
+    pool_id: { _eq: stakingPool.id },
+  });
+  for (const tree of publishedTrees) {
+    context.StakingPoolV4RewardTree.set({
+      ...tree,
+      isPublished: true,
+      publishedAtTimestamp: timestamp,
+      publishedTransactionHash: hash,
+      publishedAmount: amount,
+    });
+  }
+
+  // Mark the records of this root as distributed. A pending record has updatedAtTimestamp = 0: a
+  // daily run wrote it but its root wasn't published yet. Records of another root are left pending
+  // for when that root is published: when several trees are built before the operator catches up,
+  // every record is already on the newest root, and publishing an older one must not use them up.
+  // - `lastDistributedCumulativeReward` / `lastDistributedMerkleRoot` / `lastDistributedProof` keep
+  //   the values of the latest published root, a fallback for the frontend while a newer tree is
+  //   not published yet.
   const pendingRewards = await context.UserCumulativeReward.getWhere({
     updatedAtTimestamp: { _eq: 0 },
+    stakingPool_id: { _eq: stakingPool.id },
   });
-  if (pendingRewards.length === 0) return;
-
-  // Update each pending reward: mark as distributed if merkleRoot matches, otherwise skipped
   for (const pending of pendingRewards) {
-    const isMatch = pending.merkleRoot === merkleRoot;
-
+    if (pending.merkleRoot !== merkleRoot) continue;
     context.UserCumulativeReward.set({
       ...pending,
-      lastDistributedCumulativeReward: isMatch
-        ? pending.cumulativeReward
-        : pending.lastDistributedCumulativeReward,
-      lastDistributedMerkleRoot: isMatch
-        ? pending.merkleRoot
-        : pending.lastDistributedMerkleRoot,
-      lastDistributedProof: isMatch
-        ? pending.proof
-        : pending.lastDistributedProof,
-      isRewardsDistributed: isMatch,
+      lastDistributedCumulativeReward: pending.cumulativeReward,
+      lastDistributedMerkleRoot: pending.merkleRoot,
+      lastDistributedProof: pending.proof,
+      isRewardsDistributed: true,
       updatedAtTimestamp: timestamp,
-      distributionSkipped: !isMatch,
     });
   }
 });
 
-indexer.onEvent({ contract: "UniswapV4Staking", event: "RewardsClaimed" }, async ({ event, context }) => {
-  /**
-   * RewardsClaimed Event Handler
-   * -----------------------------
-   * Triggered when a user claims rewards from the staking contract
-   *
-   * This handler:
-   * 1. Updates the staking pool's total claimed rewards.
-   * 2. Creates a position record entry for the claim, used for historical tracking and aggregation.
-   */
+indexer.onEvent({ contract: "UniswapV4Staking", event: "RewardsClaimed" }, ({ event, context }) =>
+  recordRewardPayout(event, context, "claimed"),
+);
 
-  const {
-    chainId,
-    block: { timestamp, number: blockNumber },
-    params: { tokenId, amount },
-    srcAddress: stakingContractAddress,
-    transaction: { hash, from },
-    logIndex,
-  } = event;
-
-  const { id: hourId, start: hourStart } = getHour(timestamp);
-  const { start: dayStart } = getDay(timestamp);
-
-  const tokenEntityId = `${chainId}-${tokenId}`;
-  const stakingEntityId = `${chainId}-${stakingContractAddress}`;
-
-  const uniswapV4PositionToken =
-    await context.UniswapV4PositionToken.get(tokenEntityId);
-  if (!uniswapV4PositionToken) return;
-
-  const stakingPool = await context.StakingPoolV4.get(stakingEntityId);
-  if (!stakingPool) return;
-
-  const walletEntityId = `${chainId}-${from}`;
-  const cumilativeRewardsDataEntityId = `${walletEntityId}-${tokenId}`;
-  const cumilativeRewardsData = await context.UserCumulativeReward.get(
-    cumilativeRewardsDataEntityId,
-  );
-
-  context.StakingPoolV4.set({
-    ...stakingPool,
-    totalRewardsClaimed: stakingPool.totalRewardsClaimed + amount,
-  });
-
-  const stakingPositionEntityId = `${chainId}-${from}-${tokenId}`;
-  context.StakingPoolV4PositionRecord.set({
-    id: `${stakingPool.id}-${uniswapV4PositionToken.tokenId}-${hourId}-${logIndex}`,
-    chainId,
-    dayStartTimestamp: dayStart,
-    blockTimestamp: timestamp,
-    blockNumber,
-    pool_id: stakingPool.id,
-    rewardsClaimed: amount,
-    rewardsBurned: 0n,
-    transactionHash: hash,
-    tokenId: uniswapV4PositionToken.tokenId,
-    transactionType: StakingPoolV4PositionRecordType.REWARDS_CLAIMED,
-    stakingPosition_id: stakingPositionEntityId,
-    wallet_id: walletEntityId
-  });
-
-  if (cumilativeRewardsData) {
-    context.UserCumulativeReward.set({
-      ...cumilativeRewardsData,
-      claimed: cumilativeRewardsData.claimed + amount,
-    });
-  } else {
-    context.UserCumulativeReward.set({
-      id: cumilativeRewardsDataEntityId,
-      cumulativeReward: 0n,
-      lastDistributedCumulativeReward: 0n,
-      updatedAtTimestamp: 0,
-      merkleRoot: "",
-      lastDistributedMerkleRoot: "",
-      isRewardsDistributed: false,
-      distributionSkipped: false,
-      blockNumber: 0,
-      wallet_id: walletEntityId,
-      stakingPool_id: stakingPool.id,
-      uniPosition_id: uniswapV4PositionToken.position_id,
-      proof: [""],
-      lastDistributedProof: [],
-      claimed: amount,
-      burned: 0n,
-    });
-  }
-});
-
-indexer.onEvent({ contract: "UniswapV4Staking", event: "RewardsBurned" }, async ({ event, context }) => {
-  /**
-   * RewardsBurned Event Handler
-   * ----------------------------
-   * Triggered when rewards are burned (slashed) due to early withdrawal or other penalties
-   *
-   * This handler:
-   * 1. Updates the staking pool's total burned rewards.
-   * 2. Creates a position record entry for the burn, used for historical tracking and aggregation.
-   */
-
-  const {
-    chainId,
-    block: { timestamp, number: blockNumber },
-    params: { tokenId, amount },
-    srcAddress: stakingContractAddress,
-    transaction: { hash, from },
-    logIndex,
-  } = event;
-
-  const { id: hourId, start: hourStart } = getHour(timestamp);
-  const { start: dayStart } = getDay(timestamp);
-
-  const tokenEntityId = `${chainId}-${tokenId}`;
-  const stakingEntityId = `${chainId}-${stakingContractAddress}`;
-
-  const uniswapV4PositionToken =
-    await context.UniswapV4PositionToken.get(tokenEntityId);
-  if (!uniswapV4PositionToken) return;
-
-  const stakingPool = await context.StakingPoolV4.get(stakingEntityId);
-  if (!stakingPool) return;
-
-  const walletEntityId = `${chainId}-${from}`;
-  const cumilativeRewardsDataEntityId = `${walletEntityId}-${tokenId}`;
-  const cumilativeRewardsData = await context.UserCumulativeReward.get(
-    cumilativeRewardsDataEntityId,
-  );
-
-  context.StakingPoolV4.set({
-    ...stakingPool,
-    totalRewardsBurned: stakingPool.totalRewardsBurned + amount,
-  });
-
-  const stakingPositionEntityId = `${chainId}-${from}-${tokenId}`;
-  context.StakingPoolV4PositionRecord.set({
-    id: `${stakingPool.id}-${uniswapV4PositionToken.tokenId}-${hourId}-${logIndex}`,
-    chainId,
-    dayStartTimestamp: dayStart,
-    blockTimestamp: timestamp,
-    blockNumber,
-    pool_id: stakingPool.id,
-    rewardsClaimed: 0n,
-    rewardsBurned: amount,
-    transactionHash: hash,
-    tokenId: uniswapV4PositionToken.tokenId,
-    transactionType: StakingPoolV4PositionRecordType.REWARDS_BURNED,
-    stakingPosition_id: stakingPositionEntityId,
-    wallet_id: walletEntityId
-  });
-
-  if (cumilativeRewardsData) {
-    context.UserCumulativeReward.set({
-      ...cumilativeRewardsData,
-      burned: cumilativeRewardsData.burned + amount,
-    });
-  } else {
-    context.UserCumulativeReward.set({
-      id: cumilativeRewardsDataEntityId,
-      cumulativeReward: 0n,
-      lastDistributedCumulativeReward: 0n,
-      updatedAtTimestamp: 0,
-      merkleRoot: "",
-      lastDistributedMerkleRoot: "",
-      isRewardsDistributed: false,
-      distributionSkipped: false,
-      blockNumber: 0,
-      wallet_id: walletEntityId,
-      stakingPool_id: stakingPool.id,
-      uniPosition_id: uniswapV4PositionToken.position_id,
-      proof: [""],
-      lastDistributedProof: [],
-      claimed: 0n,
-      burned: amount,
-    });
-  }
-});
+indexer.onEvent({ contract: "UniswapV4Staking", event: "RewardsBurned" }, ({ event, context }) =>
+  recordRewardPayout(event, context, "burned"),
+);
