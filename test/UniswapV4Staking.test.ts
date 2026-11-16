@@ -287,7 +287,7 @@ const FULL = TOTAL_DAILY_REWARDS;
 // 17.5% on the contract's 100000 scale.
 const REWARD_SLASH = 17_500n;
 
-const rewardId = (tokenId: bigint, epoch: bigint) => `${CHAIN_ID}-${tokenId}-${epoch}`;
+const rewardId = (tokenId: bigint, epoch: bigint) => `${STAKING_POOL_ENTITY_ID}-${tokenId}-${epoch}`;
 const wallet = (address: string) => `${CHAIN_ID}-${address}`;
 
 // Reward buckets are written as `${tokenId}:${epoch}` in expected totals.
@@ -1030,6 +1030,17 @@ describe('UniswapV4Staking daily reward trees', () => {
     t.expect(await indexer.StakingPoolV4RewardTree.getAll()).toHaveLength(0);
   });
 
+  it('retries the block timestamp read after a transient RPC error', async (t) => {
+    const answer = globalThis.fetch;
+    let calls = 0;
+    vi.stubGlobal('fetch', async (url: string, init: { body: string }) =>
+      ++calls === 1 ? new Response('busy', { status: 503 }) : answer(url, init as RequestInit),
+    );
+    await run(dayBlock(1), deposit(dayBlock(1) - 10, ALICE, 42n, 1n));
+    t.expect(calls).toBeGreaterThan(1);
+    t.expect(await indexer.StakingPoolV4RewardTree.getAll()).toHaveLength(1);
+  });
+
   it('does not produce a new root when no staked position was in range since the last run', async (t) => {
     // Bob is alone and leaves the range 20 blocks into day 2, so day 3 has no earner.
     const r1 = rootOf({ '43:1': FULL });
@@ -1230,7 +1241,6 @@ describe('UniswapV4Staking daily reward trees', () => {
         const { tokenId, epoch } = parseBucket(key);
         indexer.UserCumulativeReward.set({
           ...getNewUserCumulativeReward({
-            chainId: CHAIN_ID,
             tokenId,
             epoch,
             walletId: wallet(ALICE),

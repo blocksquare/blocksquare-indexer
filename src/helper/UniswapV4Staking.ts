@@ -74,15 +74,14 @@ export const writeStakingHistoryRecord = (
  * and tracks `totalClaimedRewards[tokenId][epoch]`. Keying the record by (tokenId, epoch) keeps
  * each deposit's total and slash separate, and intact across withdrawals and resales.
  */
-export const getRewardRecordId = (chainId: number, tokenId: bigint, epoch: bigint) =>
-  `${chainId}-${tokenId}-${epoch}`;
+export const getRewardRecordId = (stakingPoolId: string, tokenId: bigint, epoch: bigint) =>
+  `${stakingPoolId}-${tokenId}-${epoch}`;
 
 /**
  * A reward record with nothing earned, claimed or burned yet. It gets no leaf until its
  * cumulativeReward is above zero.
  */
 export const getNewUserCumulativeReward = ({
-  chainId,
   tokenId,
   epoch,
   walletId,
@@ -90,7 +89,6 @@ export const getNewUserCumulativeReward = ({
   uniPositionId,
   blockNumber,
 }: {
-  chainId: number;
   tokenId: bigint;
   epoch: bigint;
   walletId: string;
@@ -98,7 +96,7 @@ export const getNewUserCumulativeReward = ({
   uniPositionId: string;
   blockNumber: number;
 }): UserCumulativeReward => ({
-  id: getRewardRecordId(chainId, tokenId, epoch),
+  id: getRewardRecordId(stakingPoolId, tokenId, epoch),
   tokenId,
   epoch,
   rewardSlash: 0n,
@@ -194,11 +192,10 @@ export const accrueStakingWeights = async (
       (value * (lockedSeconds * position.timeBoost + (seconds - lockedSeconds) * BOOST_PRECISION)) /
       BOOST_PRECISION;
 
-    const recordId = getRewardRecordId(chainId, position.tokenId, position.epoch);
+    const recordId = getRewardRecordId(stakingPool.id, position.tokenId, position.epoch);
     const record =
       (await context.UserCumulativeReward.get(recordId)) ??
       getNewUserCumulativeReward({
-        chainId,
         tokenId: position.tokenId,
         epoch: position.epoch,
         walletId: position.wallet_id,
@@ -337,7 +334,7 @@ export const recordRewardPayout = async (
     uniswapV4PositionToken,
   );
   const rewardRecord = await context.UserCumulativeReward.get(
-    getRewardRecordId(chainId, tokenId, epoch),
+    getRewardRecordId(stakingPool.id, tokenId, epoch),
   );
 
   context.StakingPoolV4.set({
@@ -359,7 +356,6 @@ export const recordRewardPayout = async (
   const record =
     rewardRecord ??
     getNewUserCumulativeReward({
-      chainId,
       tokenId,
       epoch,
       walletId,

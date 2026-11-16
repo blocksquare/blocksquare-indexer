@@ -299,7 +299,7 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "EarlyWithdraw" }, async 
 
   // A deposit that was never in range has no record: nothing to slash or prorate.
   const rewardRecord = await context.UserCumulativeReward.get(
-    getRewardRecordId(chainId, tokenId, epoch),
+    getRewardRecordId(getStakingPoolId(chainId, event.srcAddress), tokenId, epoch),
   );
   if (rewardRecord) {
     const position = await context.StakingPoolV4Position.get(
@@ -445,7 +445,7 @@ indexer.onBlock(
     const lockedRecordIds = new Set(
       activeStakedPositions
         .filter((position) => nowBigInt < position.lockedUntil)
-        .map((position) => getRewardRecordId(loadedChainId, position.tokenId, position.epoch)),
+        .map((position) => getRewardRecordId(STAKING_POOL_ENTITY_ID, position.tokenId, position.epoch)),
     );
 
     // The contract only accepts proofs against the latest root, so every deposit that has
@@ -548,14 +548,15 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "Reward" }, async ({ even
    *
    * This handler:
    * 1. Updates the staking pool's total rewards added.
-   * 2. Records an hourly/daily aggregate record for the pool.
+   * 2. Records one pool record per Reward event, with its hour and day for grouping.
    * 3. Marks the reward tree with this root as published.
    * 4. Marks the pending cumulative reward records of this root as distributed; records of other
    *    roots stay pending.
    */
   const {
     chainId,
-    block: { timestamp },
+    block: { timestamp, number: blockNumber },
+    logIndex,
     params: { merkleRoot, amount },
     srcAddress: stakingContractAddress,
     transaction: { hash },
@@ -566,7 +567,7 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "Reward" }, async ({ even
   const stakingPool = await context.StakingPoolV4.get(stakingEntityId);
   if (!stakingPool) return;
 
-  const { id: hourId, start: hourStart } = getHour(timestamp);
+  const { start: hourStart } = getHour(timestamp);
   const { start: dayStart } = getDay(timestamp);
 
   const updatedTotalRewards = stakingPool.totalRewardsAdded + amount;
@@ -576,7 +577,7 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "Reward" }, async ({ even
   });
 
   context.StakingPoolV4Record.set({
-    id: `${stakingPool.id}-${hourId}`,
+    id: `${stakingPool.id}-${blockNumber}-${logIndex}`,
     chainId,
     dayStartTimestamp: dayStart,
     hourStartTimestamp: hourStart,

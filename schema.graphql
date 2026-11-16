@@ -800,7 +800,7 @@ type StakingPoolV4PositionRecord {
 }
 
 type UserCumulativeReward {
-  id: ID! # ${chainId}-${tokenId}-${epoch}. One record per deposit of the NFT, matching the contract's per-(tokenId, epoch) claim tracking.
+  id: ID! # ${chainId}-${stakingContract}-${tokenId}-${epoch}. One record per deposit of the NFT, matching the contract's per-(tokenId, epoch) claim tracking.
   tokenId: BigInt! @index
   epoch: BigInt! @index
   "Early-withdraw reward slash stored on-chain for this epoch (100000 scale, 17500 = 17.5%). 0 unless the epoch exited early."

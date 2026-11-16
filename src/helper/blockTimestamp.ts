@@ -30,29 +30,43 @@ export const getBlockTimestamp = createEffect(
       );
     }
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'eth_getBlockByNumber',
-        params: [`0x${blockNumber.toString(16)}`, false],
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`getBlockTimestamp: RPC returned HTTP ${response.status} for block ${blockNumber}`);
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await fetchBlockTimestamp(url, chainId, blockNumber);
+      } catch (error) {
+        if (attempt >= MAX_ATTEMPTS) throw error;
+        await new Promise((resolve) => setTimeout(resolve, RETRY_BASE_DELAY_MS * 2 ** (attempt - 1)));
+      }
     }
-
-    const { result, error } = (await response.json()) as {
-      result?: { timestamp: string } | null;
-      error?: { message: string };
-    };
-    if (!result) {
-      throw new Error(
-        `getBlockTimestamp: block ${blockNumber} not found on chain ${chainId}${error ? `: ${error.message}` : ''}`,
-      );
-    }
-    return Number(result.timestamp);
   },
 );
+
+const MAX_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 500;
+
+const fetchBlockTimestamp = async (url: string, chainId: number, blockNumber: number) => {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'eth_getBlockByNumber',
+      params: [`0x${blockNumber.toString(16)}`, false],
+    }),
+  });
+  if (!response.ok) {
+    throw new Error(`getBlockTimestamp: RPC returned HTTP ${response.status} for block ${blockNumber}`);
+  }
+
+  const { result, error } = (await response.json()) as {
+    result?: { timestamp: string } | null;
+    error?: { message: string };
+  };
+  if (!result) {
+    throw new Error(
+      `getBlockTimestamp: block ${blockNumber} not found on chain ${chainId}${error ? `: ${error.message}` : ''}`,
+    );
+  }
+  return Number(result.timestamp);
+};
