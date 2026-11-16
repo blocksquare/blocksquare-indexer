@@ -509,7 +509,6 @@ indexer.onBlock(
         merkleRoot,
         proof: proofs[index]!,
         isRewardsDistributed: false,
-        distributionSkipped: false,
         blockNumber: block.number,
       });
     }
@@ -622,7 +621,6 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "Reward" }, async ({ even
       lastDistributedProof: pending.proof,
       isRewardsDistributed: true,
       updatedAtTimestamp: timestamp,
-      distributionSkipped: false,
     });
   }
 });

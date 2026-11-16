@@ -1138,7 +1138,6 @@ describe('UniswapV4Staking daily reward trees', () => {
     const record = (await rewards()).get('42:1')!;
     t.expect(record.merkleRoot).toBe(r2);
     t.expect(record.isRewardsDistributed).toBe(true);
-    t.expect(record.distributionSkipped).toBe(false);
     t.expect(record.lastDistributedMerkleRoot).toBe(r2);
     t.expect(record.lastDistributedCumulativeReward).toBe(2n * FULL);
   });

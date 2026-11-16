@@ -115,7 +115,6 @@ export const getNewUserCumulativeReward = ({
   lastDistributedProof: [],
   lastDistributedMerkleRoot: '',
   isRewardsDistributed: false,
-  distributionSkipped: false,
   wallet_id: walletId,
   stakingPool_id: stakingPoolId,
   uniPosition_id: uniPositionId,
