@@ -778,6 +778,7 @@ enum StakingPoolV4PositionRecordType {
   EARLY_WITHDRAW
   REWARDS_CLAIMED
   REWARDS_BURNED
+  RERANGE
 }
 
 type StakingPoolV4PositionRecord {
@@ -803,8 +804,10 @@ type UserCumulativeReward {
   id: ID! # ${chainId}-${stakingContract}-${tokenId}-${epoch}. One record per deposit of the NFT, matching the contract's per-(tokenId, epoch) claim tracking.
   tokenId: BigInt! @index
   epoch: BigInt! @index
-  "Early-withdraw reward slash stored on-chain for this epoch (100000 scale, 17500 = 17.5%). 0 unless the epoch exited early."
+  "Early-withdraw reward slash stored on-chain for this epoch (100000 scale, 17500 = 17.5%). 0 unless the epoch exited early, or was reranged while locked into a position that exited early."
   rewardSlash: BigInt!
+  "Set by a rerange while locked: the record of the new position, whose early exit also slashes this one"
+  rerangedInto: UserCumulativeReward @index
   "Boost bonus earned while locked but not in the leaf yet. Released into cumulativeReward once the lock is completed (prorated on an early exit)."
   pendingBoostReward: BigInt! @index
   "Boost bonus dropped on an early exit because the lock was not served. Never enters a leaf and is never funded."

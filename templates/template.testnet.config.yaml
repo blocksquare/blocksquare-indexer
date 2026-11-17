@@ -29,6 +29,7 @@ contracts:
       - event: Reward
       - event: RewardsClaimed
       - event: RewardsBurned
+      - event: Reranged
   - name: BlocksquareToken
     abi_file_path: abis/BlocksquareToken.json
     handler: src/handler/Token.ts

@@ -16,6 +16,7 @@ export enum StakingPoolV4PositionRecordType {
   EARLY_WITHDRAW = 'EARLY_WITHDRAW',
   REWARDS_CLAIMED = 'REWARDS_CLAIMED',
   REWARDS_BURNED = 'REWARDS_BURNED',
+  RERANGE = 'RERANGE',
 }
 
 export enum PropertyStakingPoolTransactionType {

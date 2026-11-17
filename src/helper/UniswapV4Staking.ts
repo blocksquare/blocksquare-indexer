@@ -100,6 +100,7 @@ export const getNewUserCumulativeReward = ({
   tokenId,
   epoch,
   rewardSlash: 0n,
+  rerangedInto_id: undefined,
   pendingBoostReward: 0n,
   forfeitedBoostReward: 0n,
   accruedWeight: 0n,
@@ -273,7 +274,7 @@ export const resolveRewardOwner = async (
   return {
     walletId:
       openPosition?.wallet_id ??
-      (heldByStaking ? stakingPositions[0]?.wallet_id : undefined) ??
+      (heldByStaking || positionToken.isBurned ? stakingPositions[0]?.wallet_id : undefined) ??
       positionToken.wallet_id,
     stakingPositionId:
       stakingPosition?.id ??
