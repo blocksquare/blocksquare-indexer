@@ -15,6 +15,7 @@ import { StakingPoolV4PositionRecordType } from "../types/enums";
 import {
   accrueStakingWeights,
   getReleasableBoostReward,
+  getNewUserCumulativeReward,
   getRewardRecordId,
   getStakingPoolId,
   getStakingPositionId,
@@ -343,7 +344,102 @@ indexer.onEvent({ contract: "UniswapV4Staking", event: "EarlyWithdraw" }, async 
     }
   }
 
+  let rerangedFrom = await context.UserCumulativeReward.getWhere({
+    rerangedInto_id: { _eq: getRewardRecordId(getStakingPoolId(chainId, event.srcAddress), tokenId, epoch) },
+  });
+  while (rerangedFrom[0]) {
+    const record = rerangedFrom[0];
+    context.UserCumulativeReward.set({ ...record, rewardSlash });
+    rerangedFrom = await context.UserCumulativeReward.getWhere({ rerangedInto_id: { _eq: record.id } });
+  }
+
   await closeStakingPosition(event, context, StakingPoolV4PositionRecordType.EARLY_WITHDRAW, epoch);
+});
+
+indexer.onEvent({ contract: "UniswapV4Staking", event: "Reranged" }, async ({ event, context }) => {
+  const {
+    chainId,
+    srcAddress: stakingContractAddress,
+    block: { timestamp, number: blockNumber },
+  } = event;
+  const { owner, oldTokenId, newTokenId, liquidity, lockedUntil, timeBoost } = event.params;
+
+  const positionToken = await context.UniswapV4PositionToken.get(`${chainId}-${newTokenId}`);
+  if (!positionToken) return;
+
+  await accrueStakingWeights(context, { chainId, now: timestamp, blockNumber });
+
+  const stakingPoolId = getStakingPoolId(chainId, stakingContractAddress);
+  const wallet = await context.Wallet.getOrCreate(getNewWallet(chainId, owner));
+  const oldPositionId = getStakingPositionId(chainId, owner, oldTokenId);
+  const oldPosition = await context.StakingPoolV4Position.get(oldPositionId);
+  const newPositionId = getStakingPositionId(chainId, owner, newTokenId);
+
+  context.StakingPoolV4Position.set({
+    id: newPositionId,
+    chainId,
+    tokenId: newTokenId,
+    epoch: 1n,
+    lockedUntil,
+    liquidity,
+    timeBoost,
+    stakingTimestamp: oldPosition?.stakingTimestamp ?? timestamp,
+    isPositionClosed: false,
+    updatedAtTimestamp: timestamp,
+    wallet_id: wallet.id,
+    pool_id: stakingPoolId,
+    positionToken_id: positionToken.id,
+    uniPosition_id: positionToken.position_id,
+  });
+
+  const newRecordId = getRewardRecordId(stakingPoolId, newTokenId, 1n);
+  if (oldPosition) {
+    context.StakingPoolV4Position.set({ ...oldPosition, isPositionClosed: true, updatedAtTimestamp: timestamp });
+
+    const oldRecord = await context.UserCumulativeReward.get(
+      getRewardRecordId(stakingPoolId, oldTokenId, oldPosition.epoch),
+    );
+    if (oldRecord) {
+      context.UserCumulativeReward.set({
+        ...oldRecord,
+        pendingBoostReward: 0n,
+        accruedWeight: 0n,
+        accruedBaseWeight: 0n,
+        rerangedInto_id: BigInt(timestamp) < lockedUntil ? newRecordId : undefined,
+      });
+      context.UserCumulativeReward.set({
+        ...getNewUserCumulativeReward({
+          tokenId: newTokenId,
+          epoch: 1n,
+          walletId: wallet.id,
+          stakingPoolId,
+          uniPositionId: positionToken.position_id,
+          blockNumber,
+        }),
+        pendingBoostReward: oldRecord.pendingBoostReward,
+        accruedWeight: oldRecord.accruedWeight,
+        accruedBaseWeight: oldRecord.accruedBaseWeight,
+      });
+    }
+
+    writeStakingHistoryRecord(context, event, {
+      tokenId: oldTokenId,
+      epoch: oldPosition.epoch,
+      transactionType: StakingPoolV4PositionRecordType.RERANGE,
+      pool_id: stakingPoolId,
+      stakingPosition_id: oldPositionId,
+      wallet_id: wallet.id,
+    });
+  }
+
+  writeStakingHistoryRecord(context, event, {
+    tokenId: newTokenId,
+    epoch: 1n,
+    transactionType: StakingPoolV4PositionRecordType.RERANGE,
+    pool_id: stakingPoolId,
+    stakingPosition_id: newPositionId,
+    wallet_id: wallet.id,
+  });
 });
 
 indexer.onBlock(

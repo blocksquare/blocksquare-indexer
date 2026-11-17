@@ -350,7 +350,8 @@ const stakingEvent = (
     | 'EarlyWithdrawSlashRatesUpdated'
     | 'Reward'
     | 'RewardsClaimed'
-    | 'RewardsBurned',
+    | 'RewardsBurned'
+    | 'Reranged',
   blockNumber: number,
   params: Record<string, unknown>,
   from: `0x${string}` = RELAYER,
@@ -382,6 +383,24 @@ const earlyWithdraw = (blockNumber: number, owner: `0x${string}`, tokenId: bigin
     blockNumber,
     { owner, tokenId, epoch, liquidity: 10n ** 18n, positionSlash: 10n ** 17n, rewardSlash: REWARD_SLASH },
     owner,
+  );
+const rerange = (
+  blockNumber: number,
+  owner: `0x${string}`,
+  oldTokenId: bigint,
+  newTokenId: bigint,
+  {
+    lockedUntil = 2_000_000_000n,
+    timeBoost = 100n,
+    logIndex,
+  }: { lockedUntil?: bigint; timeBoost?: bigint; logIndex?: number } = {},
+) =>
+  stakingEvent(
+    'Reranged',
+    blockNumber,
+    { owner, oldTokenId, newTokenId, newTickLower: -600n, newTickUpper: 600n, liquidity: 10n ** 18n, lockedUntil, timeBoost },
+    owner,
+    logIndex,
   );
 const publishRoot = (blockNumber: number, merkleRoot: string) =>
   stakingEvent('Reward', blockNumber, { from: RELAYER, amount: FULL, merkleRoot });
@@ -974,6 +993,103 @@ describe('UniswapV4Staking daily reward trees', () => {
     const paid = last.totalCumulativeReward + last.totalPendingBoostReward;
     t.expect(5n * FULL - paid >= 0n && 5n * FULL - paid <= 10n).toBe(true);
     t.expect(rewardSetsAt(changes, dayBlock(5)).length).toBe(2);
+  });
+
+  it('a rerange while locked moves the held bonus and unsplit weight to the new token', async (t) => {
+    const rerangeBlock = dayBlock(1) + D / 2;
+    const changes = await run(
+      dayBlock(2),
+      deposit(dayBlock(1) - 20, ALICE, 42n, 1n, { timeBoost: 200n }),
+      nftLiquidity(rerangeBlock, 42n, -(10n ** 18n), WIDE_RANGE, 1),
+      nftTransfer(rerangeBlock, STAKING_ADDRESS, ZERO, 42n, 2),
+      nftTransfer(rerangeBlock, ZERO, STAKING_ADDRESS, 50n, 3),
+      nftLiquidity(rerangeBlock, 50n, 10n ** 18n, WIDE_RANGE, 4),
+      rerange(rerangeBlock, ALICE, 42n, 50n, { timeBoost: 200n, logIndex: 5 }),
+      claim(dayBlock(2) - 1, 42n, 1n, 1n),
+    );
+
+    expectTree(t, changes, 1, { '42:1': HALF });
+    expectTree(t, changes, 2, { '42:1': HALF, '50:1': HALF });
+    const final = await rewards();
+    t.expect(final.get('42:1')!.pendingBoostReward).toBe(0n);
+    t.expect(final.get('42:1')!.rerangedInto_id).toBe(rewardId(50n, 1n));
+    t.expect(final.get('42:1')!.wallet_id).toBe(wallet(ALICE));
+    t.expect(final.get('50:1')!.pendingBoostReward).toBe(FULL);
+
+    const positions = new Map(
+      (await indexer.StakingPoolV4Position.getAll()).map((p) => [p.tokenId, p]),
+    );
+    t.expect(positions.get(42n)!.isPositionClosed).toBe(true);
+    t.expect(positions.get(50n)!.isPositionClosed).toBe(false);
+    t.expect(positions.get(50n)!.epoch).toBe(1n);
+    t.expect(positions.get(50n)!.stakingTimestamp).toBe(positions.get(42n)!.stakingTimestamp);
+    const reranges = (await indexer.StakingPoolV4PositionRecord.getAll()).filter((r) => r.transactionType === 'RERANGE');
+    t.expect(reranges.map((r) => r.tokenId).sort()).toEqual([42n, 50n]);
+  });
+
+  it('a rerange after the lock links nothing and releases the moved bonus at the next run', async (t) => {
+    setNft(50n, ALICE, WIDE_RANGE);
+    const lockedUntil = BigInt(timestampOf(dayBlock(1) + 10));
+    const changes = await run(
+      dayBlock(2),
+      deposit(dayBlock(1) - 20, ALICE, 42n, 1n, { timeBoost: 200n, lockedUntil }),
+      rerange(dayBlock(1) + 20, ALICE, 42n, 50n, { timeBoost: 200n, lockedUntil }),
+    );
+
+    expectTree(t, changes, 1, { '42:1': HALF });
+    expectTree(t, changes, 2, { '42:1': HALF, '50:1': FULL + HALF });
+    const final = await rewards();
+    t.expect(final.get('42:1')!.rerangedInto_id).toBeUndefined();
+    t.expect(final.get('50:1')!.pendingBoostReward).toBe(0n);
+  });
+
+  it('an early exit after a rerange prorates the bonus moved to the new token', async (t) => {
+    const pool = await indexer.StakingPoolV4.getOrThrow(STAKING_POOL_ENTITY_ID);
+    indexer.StakingPoolV4.set({ ...pool, minDays: 1n, maxDays: 3n, minBoost: 100n, maxBoost: 300n });
+    setNft(50n, ALICE, WIDE_RANGE);
+    const DAY = 86_400 / SECONDS_PER_BLOCK;
+    const depositBlock = dayBlock(1) - 10;
+    const lockedUntil = BigInt(timestampOf(depositBlock + 3 * DAY));
+    await run(
+      dayBlock(4),
+      deposit(depositBlock, ALICE, 42n, 1n, { timeBoost: 300n, lockedUntil }),
+      rerange(depositBlock + DAY - 5, ALICE, 42n, 50n, { timeBoost: 300n, lockedUntil }),
+      earlyWithdraw(depositBlock + 2 * DAY, ALICE, 50n, 1n),
+    );
+
+    const held = 3n * (FULL - THIRD);
+    const kept = held / 2n;
+    const final = await rewards();
+    t.expect(final.get('42:1')!.cumulativeReward + final.get('50:1')!.cumulativeReward).toBe(
+      3n * THIRD + FULL + (held - kept) + kept,
+    );
+    t.expect(final.get('42:1')!.forfeitedBoostReward).toBe(0n);
+    t.expect(final.get('50:1')!.forfeitedBoostReward).toBe(held - kept);
+    t.expect(final.get('42:1')!.rewardSlash).toBe(REWARD_SLASH);
+    t.expect((await indexer.StakingPoolV4.getOrThrow(STAKING_POOL_ENTITY_ID)).carryOverReward).toBe(0n);
+  });
+
+  it('an early exit after locked reranges sets the slash on every epoch reranged into it', async (t) => {
+    setNft(50n, ALICE, WIDE_RANGE);
+    setNft(51n, ALICE, WIDE_RANGE);
+    setNft(52n, CAROL, WIDE_RANGE);
+    const lockedUntil = BigInt(timestampOf(dayBlock(3)));
+    await run(
+      dayBlock(2),
+      deposit(dayBlock(1) - 20, ALICE, 42n, 1n, { lockedUntil, logIndex: 1 }),
+      deposit(dayBlock(1) - 20, CAROL, 44n, 1n, { lockedUntil: BigInt(timestampOf(dayBlock(1))), logIndex: 2 }),
+      rerange(dayBlock(1) + 10, ALICE, 42n, 50n, { lockedUntil }),
+      rerange(dayBlock(1) + 20, ALICE, 50n, 51n, { lockedUntil }),
+      rerange(dayBlock(1) + 30, CAROL, 44n, 52n, { lockedUntil: BigInt(timestampOf(dayBlock(1))) }),
+      earlyWithdraw(dayBlock(1) + 40, ALICE, 51n, 1n),
+    );
+
+    const final = await rewards();
+    t.expect(final.get('42:1')!.rewardSlash).toBe(REWARD_SLASH);
+    t.expect(final.get('50:1')!.rewardSlash).toBe(REWARD_SLASH);
+    t.expect(final.get('51:1')!.rewardSlash).toBe(REWARD_SLASH);
+    t.expect(final.get('44:1')!.rerangedInto_id).toBeUndefined();
+    t.expect(final.get('44:1')!.rewardSlash).toBe(0n);
   });
 
   it('a dust NFT minted in the same transaction as a large one earns only for its own liquidity', async (t) => {

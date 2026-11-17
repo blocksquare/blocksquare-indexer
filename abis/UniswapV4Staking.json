@@ -5,6 +5,10 @@
     "stateMutability": "nonpayable"
   },
   {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
     "type": "function",
     "name": "addReward",
     "inputs": [
@@ -315,6 +319,24 @@
   },
   {
     "type": "function",
+    "name": "getRerangePriceGuard",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "twapWindow",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "maxTickDeviation",
+        "type": "uint24",
+        "internalType": "uint24"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "getRewardInfo",
     "inputs": [
       {
@@ -331,6 +353,30 @@
     "outputs": [
       {
         "name": "claimed",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getRewardSlash",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "epoch",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -552,6 +598,60 @@
   },
   {
     "type": "function",
+    "name": "rerange",
+    "inputs": [
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "newTickLower",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "newTickUpper",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "amount0Min",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "amount1Min",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "zeroForOne",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "swapAmountIn",
+        "type": "uint128",
+        "internalType": "uint128"
+      },
+      {
+        "name": "swapAmountOutMin",
+        "type": "uint128",
+        "internalType": "uint128"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "newTokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "setAuthority",
     "inputs": [
       {
@@ -586,6 +686,24 @@
         "name": "earlyMaximumRewardSlash",
         "type": "uint16",
         "internalType": "uint16"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setRerangePriceGuard",
+    "inputs": [
+      {
+        "name": "twapWindow",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "maxTickDeviation",
+        "type": "uint24",
+        "internalType": "uint24"
       }
     ],
     "outputs": [],
@@ -646,6 +764,25 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "unlockCallback",
+    "inputs": [
+      {
+        "name": "data",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -951,6 +1088,80 @@
   },
   {
     "type": "event",
+    "name": "RerangePriceGuardUpdated",
+    "inputs": [
+      {
+        "name": "twapWindow",
+        "type": "uint32",
+        "indexed": false,
+        "internalType": "uint32"
+      },
+      {
+        "name": "maxTickDeviation",
+        "type": "uint24",
+        "indexed": false,
+        "internalType": "uint24"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Reranged",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "oldTokenId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newTokenId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newTickLower",
+        "type": "int24",
+        "indexed": false,
+        "internalType": "int24"
+      },
+      {
+        "name": "newTickUpper",
+        "type": "int24",
+        "indexed": false,
+        "internalType": "int24"
+      },
+      {
+        "name": "liquidity",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
+      },
+      {
+        "name": "lockedUntil",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "timeBoost",
+        "type": "uint16",
+        "indexed": false,
+        "internalType": "uint16"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Reward",
     "inputs": [
       {
@@ -1156,6 +1367,11 @@
   },
   {
     "type": "error",
+    "name": "InsufficientSwapOutput",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidEpoch",
     "inputs": []
   },
@@ -1221,6 +1437,11 @@
   },
   {
     "type": "error",
+    "name": "NotPoolManager",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NotPositionOwner",
     "inputs": []
   },
@@ -1231,7 +1452,38 @@
   },
   {
     "type": "error",
+    "name": "PriceAwayFromTwap",
+    "inputs": [
+      {
+        "name": "tick",
+        "type": "int24",
+        "internalType": "int24"
+      },
+      {
+        "name": "twapTick",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "RangeNotActive",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "Reentrancy",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "RerangeLeftoverTooLarge",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "RerangeWhileLockedDisabled",
     "inputs": []
   },
   {
@@ -1244,6 +1496,16 @@
         "internalType": "address"
       }
     ]
+  },
+  {
+    "type": "error",
+    "name": "SameRange",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SwapExceedsPosition",
+    "inputs": []
   },
   {
     "type": "error",
