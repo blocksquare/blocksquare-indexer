@@ -142,6 +142,7 @@ contracts:
       - event: MainSaleCanceled
       - event: PresaleCanceled
       - event: MainSaleInvestmentsRefunded
+      - event: UserClaimedMainSaleRefund
       - event: PresaleInvestmentsRefunded
   - name: PriceFeedRegistry
     abi_file_path: ./abis/PriceFeedRegistry.json

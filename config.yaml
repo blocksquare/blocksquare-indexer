@@ -170,6 +170,7 @@ contracts:
       - event: MainSaleCanceled
       - event: PresaleCanceled
       - event: MainSaleInvestmentsRefunded
+      - event: UserClaimedMainSaleRefund
       - event: PresaleInvestmentsRefunded
   # This is used to index mainnet for price feeds
   - name: PriceFeedRegistry

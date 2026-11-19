@@ -202,6 +202,24 @@ indexer.onEvent(
   },
 );
 
+indexer.onEvent(
+  { contract: 'PropertyTokenOfferingV2', event: 'UserClaimedMainSaleRefund' },
+  async ({ event, context }) => {
+    const { params } = event;
+
+    const mainSaleId = `${event.chainId}-${params.property}-${params.mainSaleId}`;
+    const mainSale = await context.MainSaleOffering.getOrThrow(
+      mainSaleId,
+      'PropertyTokenOfferingV2.UserClaimedMainSaleRefund: MainSale not found',
+    );
+
+    context.MainSaleOffering.set({
+      ...mainSale,
+      status: 'refunded',
+    });
+  },
+);
+
 // ─── PresaleInvestmentsRefunded ─────────────────────────────────────────────────
 
 indexer.onEvent(
